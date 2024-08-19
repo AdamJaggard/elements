@@ -1,6 +1,6 @@
 import React from 'react';
 import '@mux/mux-uploader';
-import type MuxUploaderRetryElement from '@mux/mux-uploader';
+import type { MuxUploaderRetryElement } from '@mux/mux-uploader';
 import { toNativeProps } from './common/utils';
 import { useRef } from 'react';
 import { useCombinedRefs } from './useCombinedRefs';
@@ -9,9 +9,8 @@ export type MuxUploaderRetryRefAttributes = MuxUploaderRetryElement;
 
 export type MuxUploaderRetryProps = {
   muxUploader?: string;
-  // Currently no slottable children so omitting (CJP)
-  // children?: React.ReactNode;
-};
+  children?: React.ReactNode;
+} & Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>, 'ref'>;
 
 const MuxUploaderRetryInternal = React.forwardRef<MuxUploaderRetryRefAttributes, MuxUploaderRetryProps>(
   ({ children, ...props }, ref) => {

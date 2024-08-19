@@ -1,9 +1,9 @@
 /* eslint @typescript-eslint/triple-slash-reference: "off" */
-/// <reference path="../dist/types/mux-embed.d.ts" />
+/// <reference path="../../../node_modules/mux-embed/dist/types/mux-embed.d.ts" />
 import type { Options } from 'mux-embed';
 import type { MediaError } from './errors';
-import type { HlsInterface as Hls } from './hls';
-import type { VideoTrack, AudioTrack, VideoTrackList, AudioTrackList } from 'media-tracks';
+import type { HlsConfig } from 'hls.js';
+import type Hls from 'hls.js';
 
 type KeyTypes = string | number | symbol;
 type Maybe<T> = T | null | undefined;
@@ -117,40 +117,72 @@ export const allMediaTypes = [
   // ...(shorthandKeys.map((k) => k.toLowerCase()) as `${Lowercase<keyof MimeTypeShorthandMap>}`[]),
 ] as MediaTypes[];
 
-export type CuePoint<T = any> = {
-  time: number;
+// Both cuepoints and chapters have optional end times
+// so support both joined up and sparse cue placements
+type CueLike<T = any> = {
+  startTime: number;
+  endTime?: number;
   value: T;
 };
+export type CuePoint<T = any> =
+  | CueLike<T> // new shape
+  | { time: number; value: T }; // legacy shape, still supported for now
+export type Chapter = CueLike<string>;
+
+export const MaxResolution = {
+  upTo720p: '720p',
+  upTo1080p: '1080p',
+  upTo1440p: '1440p',
+  upTo2160p: '2160p',
+} as const;
+
+export const MinResolution = {
+  noLessThan480p: '480p',
+  noLessThan540p: '540p',
+  noLessThan720p: '720p',
+  noLessThan1080p: '1080p',
+  noLessThan1440p: '1440p',
+  noLessThan2160p: '2160p',
+} as const;
+
+export const RenditionOrder = {
+  DESCENDING: 'desc',
+} as const;
+
+export type MaxResolutionValue = ValueOf<typeof MaxResolution>;
+export type MinResolutionValue = ValueOf<typeof MinResolution>;
+export type RenditionOrderValue = ValueOf<typeof RenditionOrder>;
 
 export type MuxMediaPropTypes = {
-  envKey: MetaData['env_key'];
-  debug: Options['debug'] & Hls['config']['debug'];
-  metadata: Partial<Options['data']>;
-  maxResolution: string;
-  customDomain: string;
-  beaconCollectionDomain: Options['beaconCollectionDomain'];
-  errorTranslator: Options['errorTranslator'];
-  disableCookies: Options['disableCookies'];
-  playbackId: string;
-  playerInitTime: MetaData['player_init_time'];
-  preferPlayback: ValueOf<PlaybackTypes> | undefined;
-  type: MediaTypes;
-  streamType: ValueOf<StreamTypes>;
-  targetLiveWindow: number;
-  liveEdgeStart: number;
-  startTime: Hls['config']['startPosition'];
+  _hlsConfig?: Partial<HlsConfig>;
   autoPlay?: Autoplay;
   autoplay?: Autoplay;
-  preferCmcd: ValueOf<CmcdTypes> | undefined;
+  beaconCollectionDomain: Options['beaconCollectionDomain'];
+  customDomain: string;
+  debug: Options['debug'] & Hls['config']['debug'];
+  disableCookies: Options['disableCookies'];
+  disableTracking: boolean;
+  drmToken?: string;
+  envKey: MetaData['env_key'];
   error?: HTMLMediaElement['error'] | MediaError;
+  errorTranslator: Options['errorTranslator'];
+  liveEdgeStart: number;
+  maxResolution: MaxResolutionValue;
+  metadata: Partial<Options['data']>;
+  minResolution: MinResolutionValue;
+  playbackId: string;
+  playerInitTime: MetaData['player_init_time'];
+  preferCmcd: ValueOf<CmcdTypes> | undefined;
+  preferPlayback: ValueOf<PlaybackTypes> | undefined;
+  programStartTime: number;
+  programEndTime: number;
+  renditionOrder: RenditionOrderValue;
+  startTime: Hls['config']['startPosition'];
+  streamType: ValueOf<StreamTypes>;
+  targetLiveWindow: number;
+  tokens: Partial<{ drm: string; playback: string; storyboard: string; thumbnail: string }>;
+  type: MediaTypes;
 };
-
-export interface MediaTracks {
-  videoTracks: VideoTrackList;
-  audioTracks: AudioTrackList;
-  addAudioTrack(kind: string, label?: string, language?: string): AudioTrack;
-  addVideoTrack(kind: string, label?: string, language?: string): VideoTrack;
-}
 
 export type HTMLMediaElementProps = Partial<Pick<HTMLMediaElement, 'src' | 'preload' | 'error' | 'seekable'>>;
 
@@ -158,4 +190,5 @@ export type MuxMediaProps = HTMLMediaElementProps & MuxMediaPropTypes;
 export type MuxMediaPropsInternal = MuxMediaProps & {
   playerSoftwareName: MetaData['player_software_name'];
   playerSoftwareVersion: MetaData['player_software_version'];
+  drmTypeCb?: (drmType: Metadata['view_drm_type']) => void;
 };

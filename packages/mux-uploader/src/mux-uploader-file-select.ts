@@ -28,6 +28,7 @@ export const fileSelectFragment = /*html*/ `
     color: #fff;
     background: #000;
   }
+
   </style>
 
   <button id="file-select" type="button" part="file-select-button">Upload a video</button>
@@ -38,6 +39,10 @@ const template = document.createElement('template');
 template.innerHTML = /*html*/ `
   <style>
     :host { display: inline-block; }
+
+    :host([file-ready]) > slot  {
+      display: none;
+    }
   </style>
 
   <slot>
@@ -82,20 +87,18 @@ class MuxUploaderFileSelectElement extends globalThis.HTMLElement {
       this.#uploaderEl.addEventListener(
         'file-ready',
         () => {
-          if (this.filePickerEl) {
-            this.filePickerEl.style.display = 'none';
-          }
+          this.toggleAttribute('file-ready', true);
         },
         opts
       );
 
-      this.#uploaderEl.addEventListener('uploadstart', () => this.setAttribute('upload-in-progress', ''), opts);
+      this.#uploaderEl.addEventListener('uploadstart', () => this.toggleAttribute('upload-in-progress', true), opts);
 
       this.#uploaderEl.addEventListener(
         'success',
         () => {
-          this.removeAttribute('upload-in-progress');
-          this.setAttribute('upload-complete', '');
+          this.toggleAttribute('upload-in-progress', false);
+          this.toggleAttribute('upload-complete', true);
         },
         opts
       );
@@ -103,12 +106,14 @@ class MuxUploaderFileSelectElement extends globalThis.HTMLElement {
       this.#uploaderEl.addEventListener(
         'reset',
         () => {
-          if (this.filePickerEl) {
-            this.filePickerEl.style.display = 'block';
-          }
+          this.toggleAttribute('file-ready', false);
         },
         opts
       );
+
+      this.toggleAttribute('upload-in-progress', this.#uploaderEl.hasAttribute('upload-in-progress'));
+      this.toggleAttribute('upload-complete', this.#uploaderEl.hasAttribute('upload-complete'));
+      this.toggleAttribute('file-ready', this.#uploaderEl.hasAttribute('file-ready'));
     }
   }
 

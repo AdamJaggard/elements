@@ -1,5 +1,5 @@
 import { StreamTypes } from '@mux/playback-core';
-import type { ValueOf } from '@mux/playback-core';
+import type { ValueOf, MaxResolutionValue, MinResolutionValue, RenditionOrderValue } from '@mux/playback-core';
 import { toQuery, camelCase, parseJwt } from './utils';
 
 const MUX_VIDEO_DOMAIN = 'mux.com';
@@ -16,25 +16,38 @@ const getEnvPlayerVersion = () => {
 const player_version = getEnvPlayerVersion();
 export const getPlayerVersion = () => player_version;
 
-export const getSrcFromPlaybackId = (
-  playbackId?: string,
-  { maxResolution, token, domain = MUX_VIDEO_DOMAIN }: { maxResolution?: string; token?: string; domain?: string } = {}
-) => {
-  /*
-   * `redundant_streams` and `max_resolution` query param can only be added to public
-   * playback IDs, in order to use these features with signed URLs
-   * the query param must be added to the signing token.
-   *
-   * */
-  const isSignedUrl = !!token;
-  const maxRes = maxResolution ? { max_resolution: maxResolution } : {};
-  const query = isSignedUrl ? { token } : { redundant_streams: true, ...maxRes };
-  return `https://stream.${domain}/${playbackId}.m3u8${toQuery(query)}`;
-};
+type MuxURLCustomProps = Partial<{
+  customDomain: string;
+  token: string;
+}>;
+
+type MuxVideoURLCustomProps = MuxURLCustomProps &
+  Partial<{
+    maxResolution: MaxResolutionValue;
+    minResolution: MinResolutionValue;
+    renditionOrder: RenditionOrderValue;
+  }>;
+
+type MuxPosterURLCustomProps = MuxURLCustomProps &
+  Partial<{
+    thumbnailTime: number;
+    programTime: number;
+  }>;
+
+type MuxStoryboardURLCustomProps = MuxURLCustomProps &
+  Partial<{
+    programStartTime: number;
+    programEndTime: number;
+  }>;
 
 export const getPosterURLFromPlaybackId = (
   playbackId?: string,
-  { token, thumbnailTime, domain = MUX_VIDEO_DOMAIN }: { token?: string; domain?: string; thumbnailTime?: number } = {}
+  {
+    token,
+    customDomain: domain = MUX_VIDEO_DOMAIN,
+    thumbnailTime,
+    programTime: program_time,
+  }: MuxPosterURLCustomProps = {}
 ) => {
   // NOTE: thumbnailTime is not supported when using a signedURL/token. Remove under these cases. (CJP)
   const time = token == null ? thumbnailTime : undefined;
@@ -48,12 +61,18 @@ export const getPosterURLFromPlaybackId = (
   return `https://image.${domain}/${playbackId}/thumbnail.webp${toQuery({
     token,
     time,
+    program_time,
   })}`;
 };
 
 export const getStoryboardURLFromPlaybackId = (
   playbackId?: string,
-  { token, domain = MUX_VIDEO_DOMAIN }: { token?: string; domain?: string } = {}
+  {
+    token,
+    customDomain: domain = MUX_VIDEO_DOMAIN,
+    programStartTime: program_start_time,
+    programEndTime: program_end_time,
+  }: MuxStoryboardURLCustomProps = {}
 ) => {
   const { aud } = parseJwt(token);
 
@@ -64,6 +83,8 @@ export const getStoryboardURLFromPlaybackId = (
   return `https://image.${domain}/${playbackId}/storyboard.vtt${toQuery({
     token,
     format: 'webp',
+    program_start_time,
+    program_end_time,
   })}`;
 };
 

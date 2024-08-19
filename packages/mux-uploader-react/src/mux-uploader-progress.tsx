@@ -1,7 +1,7 @@
 import React from 'react';
 import type { CSSProperties } from 'react';
 import '@mux/mux-uploader';
-import { type MuxUploaderProgressElement } from '@mux/mux-uploader';
+import type { MuxUploaderProgressElement } from '@mux/mux-uploader';
 import { toNativeProps } from './common/utils';
 import { useRef } from 'react';
 import { useCombinedRefs } from './useCombinedRefs';
@@ -17,7 +17,7 @@ export type MuxUploaderProgressProps = {
     ['--progress-bar-fill-color']?: CSSProperties['fill'];
     ['--progress-percentage-display']?: CSSProperties['display'];
   };
-};
+} & Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>, 'ref'>;
 
 const MuxUploaderProgressInternal = React.forwardRef<MuxUploaderProgressRefAttributes, MuxUploaderProgressProps>(
   ({ children, ...props }, ref) => {

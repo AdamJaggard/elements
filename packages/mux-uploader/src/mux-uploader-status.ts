@@ -39,6 +39,12 @@ class MuxUploaderStatusElement extends globalThis.HTMLElement {
       this.#uploaderEl.addEventListener('uploaderror', this.onUploadError, opts);
       this.#uploaderEl.addEventListener('success', this.onSuccess, opts);
       this.#uploaderEl.addEventListener('uploadstart', this.clearStatusMessage, opts);
+      this.#uploaderEl.addEventListener('offline', this.onOffline, opts);
+      this.#uploaderEl.addEventListener('online', this.clearStatusMessage, opts);
+
+      this.toggleAttribute('upload-in-progress', this.#uploaderEl.hasAttribute('upload-in-progress'));
+      this.toggleAttribute('upload-complete', this.#uploaderEl.hasAttribute('upload-complete'));
+      this.toggleAttribute('upload-error', this.#uploaderEl.hasAttribute('upload-error'));
     }
   }
 
@@ -47,18 +53,21 @@ class MuxUploaderStatusElement extends globalThis.HTMLElement {
   }
 
   clearStatusMessage = () => {
+    this.toggleAttribute('upload-error', false);
     if (this.statusMessage) {
       this.statusMessage.innerHTML = '';
     }
   };
 
   onUploadError = (e: MuxUploaderElementEventMap['uploaderror']) => {
+    this.toggleAttribute('upload-error', true);
     if (this.statusMessage) {
       this.statusMessage.innerHTML = e.detail.message;
     }
   };
 
   onSuccess = () => {
+    this.toggleAttribute('upload-error', false);
     const successMessage = 'Upload complete!';
 
     if (this.statusMessage) {
@@ -66,6 +75,15 @@ class MuxUploaderStatusElement extends globalThis.HTMLElement {
     }
 
     console.info(successMessage);
+  };
+
+  onOffline = () => {
+    this.toggleAttribute('upload-error', false);
+    const offlineMessage = 'Currently offline. Upload will resume automatically when online.';
+
+    if (this.statusMessage) {
+      this.statusMessage.innerHTML = offlineMessage;
+    }
   };
 }
 

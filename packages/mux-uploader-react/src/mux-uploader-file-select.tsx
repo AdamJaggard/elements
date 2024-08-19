@@ -1,6 +1,6 @@
 import React from 'react';
 import '@mux/mux-uploader';
-import type MuxUploaderFileSelectElement from '@mux/mux-uploader';
+import type { MuxUploaderFileSelectElement } from '@mux/mux-uploader';
 import { toNativeProps } from './common/utils';
 import { useRef } from 'react';
 import { useCombinedRefs } from './useCombinedRefs';
@@ -10,7 +10,7 @@ export type MuxUploaderFileSelectRefAttributes = MuxUploaderFileSelectElement;
 export type MuxUploaderFileSelectProps = {
   muxUploader?: string;
   children?: React.ReactNode;
-};
+} & Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>, 'ref'>;
 
 const MuxUploaderFileSelectInternal = React.forwardRef<MuxUploaderFileSelectRefAttributes, MuxUploaderFileSelectProps>(
   ({ children, ...props }, ref) => {

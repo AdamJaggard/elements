@@ -27,7 +27,6 @@ function MuxPlayerPage() {
 
       <MuxPlayer
         playbackId="23s11nz72DsoN657h4314PjKKjsF2JG33eBQQt6B95I"
-        streamType="on-demand"
         preload="auto"
         onLoadedMetadata={({ target }) => {
           addCuePointsToPlayer(target as MuxPlayerElement);
@@ -48,8 +47,6 @@ function MuxPlayerPage() {
           {activeCuePoint?.value ? JSON.stringify(activeCuePoint?.value, null, 2) : 'Unset'}
         </pre>
       </div>
-      <br />
-      <Link href="/"><a>Browse Elements</a></Link>
     </>
   );
 }

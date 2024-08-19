@@ -294,6 +294,7 @@ function MuxPlayerPage({ location }: Props) {
   useEffect(() => {
     if (!router.isReady) return;
     dispatch(updateProps(toInitialState(selectedAsset, mediaAssets, router.query)))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.query, router.isReady]);
   const [stylesState, dispatchStyles] = useReducer(reducer, {});
   const genericOnChange = (obj) => dispatch(updateProps<MuxPlayerProps>(obj));
@@ -316,7 +317,6 @@ function MuxPlayerPage({ location }: Props) {
         <title>&lt;MuxPlayer/&gt; Demo</title>
       </Head>
 
-      <Script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1" />
       <MuxPlayer
         ref={mediaElRef}
         style={stylesState}
@@ -618,9 +618,6 @@ function MuxPlayerPage({ location }: Props) {
           values={['noc', 'nof', 'nok', 'nom', 'nospace', 'noarrowleft', 'noarrowright']}
         />
       </div>
-
-      <br/>
-      <Link href="/"><a>Browse Elements</a></Link>
     </>
   );
 }

@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.2.0-alpha.8](https://github.com/muxinc/elements/compare/@mux/mux-active-viewer-count@0.2.0-alpha.7...@mux/mux-active-viewer-count@0.2.0-alpha.8) (2024-08-02)
+
+**Note:** Version bump only for package @mux/mux-active-viewer-count
+
+
+
+
+
+# [0.2.0-alpha.7](https://github.com/muxinc/elements/compare/@mux/mux-active-viewer-count@0.2.0-alpha.6...@mux/mux-active-viewer-count@0.2.0-alpha.7) (2024-04-18)
+
+
+### Bug Fixes
+
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/muxinc/elements/issues/897)) ([fd91d94](https://github.com/muxinc/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+
+
+
+
+
+# [0.2.0-alpha.6](https://github.com/muxinc/elements/compare/@mux/mux-active-viewer-count@0.2.0-alpha.5...@mux/mux-active-viewer-count@0.2.0-alpha.6) (2024-01-02)
+
+
+### Bug Fixes
+
+* upgrade external deps, allow patches uniform ([#850](https://github.com/muxinc/elements/issues/850)) ([f72acf4](https://github.com/muxinc/elements/commit/f72acf49199497cb45c186bd4b2bc2a67e5431c0))
+
+
+
+
+
+# [0.2.0-alpha.5](https://github.com/muxinc/elements/compare/@mux/mux-active-viewer-count@0.2.0-alpha.4...@mux/mux-active-viewer-count@0.2.0-alpha.5) (2023-12-07)
+
+
+### Bug Fixes
+
+* upgrade media-chrome + turbo ([#838](https://github.com/muxinc/elements/issues/838)) ([a7c4948](https://github.com/muxinc/elements/commit/a7c49488ccbc3c1a9d087775d8ee83298acd1e91))
+
+
+
+
+
 # [0.2.0-alpha.4](https://github.com/muxinc/elements/compare/@mux/mux-active-viewer-count@0.2.0-alpha.3...@mux/mux-active-viewer-count@0.2.0-alpha.4) (2023-09-05)
 
 **Note:** Version bump only for package @mux/mux-active-viewer-count

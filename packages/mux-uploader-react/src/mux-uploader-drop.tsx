@@ -1,7 +1,7 @@
 import React from 'react';
 import type { CSSProperties } from 'react';
 import '@mux/mux-uploader';
-import type MuxUploaderDropElement from '@mux/mux-uploader';
+import type { MuxUploaderDropElement } from '@mux/mux-uploader';
 import { toNativeProps } from './common/utils';
 import { useRef } from 'react';
 import { useCombinedRefs } from './useCombinedRefs';
@@ -16,7 +16,7 @@ export type MuxUploaderDropProps = {
     ['--overlay-background-color']?: CSSProperties['backgroundColor'];
   };
   children?: React.ReactNode;
-};
+} & Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>, 'ref'>;
 
 const MuxUploaderDropInternal = React.forwardRef<MuxUploaderDropRefAttributes, MuxUploaderDropProps>(
   ({ children, ...props }, ref) => {

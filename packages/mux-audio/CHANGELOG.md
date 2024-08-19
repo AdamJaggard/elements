@@ -3,6 +3,128 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.13.3](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.13.2...@mux/mux-audio@0.13.3) (2024-08-06)
+
+**Note:** Version bump only for package @mux/mux-audio
+
+
+
+
+
+## [0.13.2](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.13.1...@mux/mux-audio@0.13.2) (2024-08-02)
+
+**Note:** Version bump only for package @mux/mux-audio
+
+
+
+
+
+## [0.13.1](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.13.0...@mux/mux-audio@0.13.1) (2024-07-10)
+
+
+### Bug Fixes
+
+* upgrade hls.js, custom-media-element, etc. ([#931](https://github.com/muxinc/elements/issues/931)) ([efb5c51](https://github.com/muxinc/elements/commit/efb5c514f65f017fdeea50682e1cdb15229cfd92)), closes [#927](https://github.com/muxinc/elements/issues/927)
+
+
+
+
+
+# [0.13.0](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.12.1...@mux/mux-audio@0.13.0) (2024-05-28)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video, mux-video-react, mux-audio, mux-audio-react, playback-core:** pdt clipping ([#923](https://github.com/muxinc/elements/issues/923)) ([22e9b06](https://github.com/muxinc/elements/commit/22e9b06e2e0913a6c34ebea53f4bbeded969b5a4))
+
+
+
+
+
+## [0.12.1](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.12.0...@mux/mux-audio@0.12.1) (2024-05-03)
+
+**Note:** Version bump only for package @mux/mux-audio
+
+
+
+
+
+# [0.12.0](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.11.5...@mux/mux-audio@0.12.0) (2024-04-18)
+
+
+### Bug Fixes
+
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/muxinc/elements/issues/897)) ([fd91d94](https://github.com/muxinc/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+
+
+### Features
+
+* add `disable-tracking` attribute and prop ([#900](https://github.com/muxinc/elements/issues/900)) ([0f5966e](https://github.com/muxinc/elements/commit/0f5966ec6cdf3cacde017a4ddd9c388bea3168d7))
+* **playback-core, mux-video, mux-audio, mux-player:** Upg hls.js ([#902](https://github.com/muxinc/elements/issues/902)) ([a6a76b6](https://github.com/muxinc/elements/commit/a6a76b69e03867cc11c348d2b48e0160ea295309))
+
+
+
+
+
+## [0.11.5](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.11.4...@mux/mux-audio@0.11.5) (2024-03-29)
+
+**Note:** Version bump only for package @mux/mux-audio
+
+
+
+
+
+## [0.11.4](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.11.3...@mux/mux-audio@0.11.4) (2024-03-20)
+
+**Note:** Version bump only for package @mux/mux-audio
+
+
+
+
+
+## [0.11.3](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.11.2...@mux/mux-audio@0.11.3) (2024-02-16)
+
+**Note:** Version bump only for package @mux/mux-audio
+
+
+
+
+
+## [0.11.2](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.11.1...@mux/mux-audio@0.11.2) (2024-01-02)
+
+
+### Bug Fixes
+
+* upgrade custom-media-element ([#858](https://github.com/muxinc/elements/issues/858)) ([eb39e54](https://github.com/muxinc/elements/commit/eb39e546073c9c78b385809b27d095f36350737f))
+* upgrade external deps, allow patches uniform ([#850](https://github.com/muxinc/elements/issues/850)) ([f72acf4](https://github.com/muxinc/elements/commit/f72acf49199497cb45c186bd4b2bc2a67e5431c0))
+
+
+
+
+
+## [0.11.1](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.11.0...@mux/mux-audio@0.11.1) (2023-12-07)
+
+
+### Bug Fixes
+
+* Adding unofficial _hlsConfig to media elements and playback core. ([#833](https://github.com/muxinc/elements/issues/833)) ([b86f6e6](https://github.com/muxinc/elements/commit/b86f6e6eb2c116d1d676fbaecd46d77a0baa3416)), closes [#792](https://github.com/muxinc/elements/issues/792)
+* upgrade media-chrome + turbo ([#838](https://github.com/muxinc/elements/issues/838)) ([a7c4948](https://github.com/muxinc/elements/commit/a7c49488ccbc3c1a9d087775d8ee83298acd1e91))
+
+
+
+
+
+# [0.11.0](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.10.11...@mux/mux-audio@0.11.0) (2023-10-24)
+
+
+### Features
+
+* Manifest manipulation and other media stream query param props. ([954b2c8](https://github.com/muxinc/elements/commit/954b2c80d7df88bb4585c46a15dd1185d56dcf9a))
+
+
+
+
+
 ## [0.10.11](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.10.10...@mux/mux-audio@0.10.11) (2023-10-03)
 
 **Note:** Version bump only for package @mux/mux-audio

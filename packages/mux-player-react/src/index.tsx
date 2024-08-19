@@ -1,6 +1,16 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import type { StreamTypes, PlaybackTypes, CmcdTypes } from '@mux/playback-core';
+import type {
+  StreamTypes,
+  PlaybackTypes,
+  CmcdTypes,
+  MaxResolutionValue,
+  MinResolutionValue,
+  RenditionOrderValue,
+} from '@mux/playback-core';
+import { MaxResolution, MinResolution, RenditionOrder } from '@mux/playback-core';
 import { MediaError } from '@mux/mux-player';
 import type MuxPlayerElement from '@mux/mux-player';
 import type { Tokens, MuxPlayerElementEventMap } from '@mux/mux-player';
@@ -10,7 +20,7 @@ import { useCombinedRefs } from './useCombinedRefs';
 import useObjectPropEffect, { defaultHasChanged } from './useObjectPropEffect';
 import { getPlayerVersion } from './env';
 
-export { MediaError };
+export { MediaError, MaxResolution, MinResolution, RenditionOrder };
 
 type ValueOf<T> = T[keyof T];
 interface GenericEventListener<T extends Event = CustomEvent> {
@@ -40,9 +50,13 @@ type MuxMediaPropTypes = {
   envKey: string;
   // debug: Options["debug"] & Hls["config"]["debug"];
   debug: boolean;
+  disableTracking: boolean;
   disableCookies: boolean;
+  disablePictureInPicture?: boolean;
   // metadata: Partial<Options["data"]>;
   metadata: { [k: string]: any };
+  extraSourceParams: Record<string, any>;
+  _hlsConfig: MuxPlayerElement['_hlsConfig'];
   beaconCollectionDomain: string;
   customDomain: string;
   playbackId: string;
@@ -61,12 +75,18 @@ export type MuxPlayerProps = {
   className?: string;
   hotkeys?: string;
   nohotkeys?: boolean;
+  castReceiver?: string | undefined;
+  castCustomData?: Record<string, any> | undefined;
   defaultHiddenCaptions?: boolean;
   playerSoftwareVersion?: string;
   playerSoftwareName?: string;
   forwardSeekOffset?: number;
   backwardSeekOffset?: number;
-  maxResolution?: string;
+  maxResolution?: MaxResolutionValue;
+  minResolution?: MinResolutionValue;
+  renditionOrder?: RenditionOrderValue;
+  programStartTime?: number;
+  programEndTime?: number;
   metadataVideoId?: string;
   metadataVideoTitle?: string;
   metadataViewerUserId?: string;
@@ -76,6 +96,7 @@ export type MuxPlayerProps = {
   placeholder?: string;
   playbackRates?: number[];
   defaultShowRemainingTime?: boolean;
+  defaultDuration?: number;
   noVolumePref?: boolean;
   thumbnailTime?: number;
   title?: string;
@@ -107,7 +128,7 @@ export type MuxPlayerProps = {
   onError?: GenericEventListener<MuxPlayerElementEventMap['error']>;
   onCuePointChange?: GenericEventListener<MuxPlayerElementEventMap['cuepointchange']>;
   onCuePointsChange?: GenericEventListener<MuxPlayerElementEventMap['cuepointschange']>;
-  // onPlayerReady?: EventListener;
+  onChapterChange?: GenericEventListener<MuxPlayerElementEventMap['chapterchange']>;
 } & Partial<MuxMediaPropTypes> &
   Partial<VideoApiAttributes>;
 
@@ -162,7 +183,7 @@ const usePlayer = (
     onError,
     onCuePointChange,
     onCuePointsChange,
-    // onPlayerReady,
+    onChapterChange,
     metadata,
     tokens,
     paused,
@@ -170,13 +191,19 @@ const usePlayer = (
     playbackRates,
     currentTime,
     themeProps,
+    extraSourceParams,
+    castCustomData,
+    _hlsConfig,
     ...remainingProps
   } = props;
   useObjectPropEffect('playbackRates', playbackRates, ref);
   useObjectPropEffect('metadata', metadata, ref);
+  useObjectPropEffect('extraSourceParams', extraSourceParams, ref);
+  useObjectPropEffect('_hlsConfig', _hlsConfig, ref);
   useObjectPropEffect('themeProps', themeProps, ref);
   useObjectPropEffect('tokens', tokens, ref);
   useObjectPropEffect('playbackId', playbackId, ref);
+  useObjectPropEffect('castCustomData', castCustomData, ref);
   useObjectPropEffect(
     'paused',
     paused,
@@ -225,7 +252,7 @@ const usePlayer = (
   useEventCallbackEffect('error', ref, onError);
   useEventCallbackEffect('cuepointchange', ref, onCuePointChange);
   useEventCallbackEffect('cuepointschange', ref, onCuePointsChange);
-  // useEventCallbackEffect('playerready', ref, onPlayerReady);
+  useEventCallbackEffect('chapterchange', ref, onChapterChange);
   return [remainingProps];
 };
 

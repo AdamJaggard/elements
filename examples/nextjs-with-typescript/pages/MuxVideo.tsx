@@ -21,16 +21,24 @@ function MuxVideoPage() {
       <MuxVideo
         ref={mediaElRef}
         playbackId="23s11nz72DsoN657h4314PjKKjsF2JG33eBQQt6B95I"
+        // Test _hlsConfig for MuxVideo (react)
+        // _hlsConfig={{
+        //   startLevel: 1,
+        //   debug: true,
+        // }}
         // metadata={{
         //   video_id: "video-id-12345",
         //   video_title: "Mad Max: Fury Road Trailer",
         //   viewer_user_id: "user-id-6789",
         // }}
         // envKey="mux-data-env-key"
-        streamType="on-demand"
         controls
         autoPlay={autoplay}
         muted={muted}
+        maxResolution="2160p"
+        minResolution="540p"
+        renditionOrder="desc"
+        preferPlayback="native"
         onPlay={() => {
           setPaused(false);
         }}
@@ -68,9 +76,6 @@ function MuxVideoPage() {
           />
         </div>
       </div>
-
-      <br/>
-      <Link href="/"><a>Browse Elements</a></Link>
     </>
   );
 }

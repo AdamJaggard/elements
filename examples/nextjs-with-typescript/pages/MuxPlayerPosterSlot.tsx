@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import Head from 'next/head';
 import { useRef, useState } from "react";
@@ -22,7 +23,6 @@ function MuxPlayerPage() {
       <MuxPlayer
         ref={mediaElRef}
         playbackId="VcmKA6aqzIzlg3MayLJDnbF55kX00mds028Z65QxvBYaA"
-        streamType="on-demand"
         autoPlay={autoplay}
         muted={muted}
         onPlay={() => {
@@ -36,11 +36,9 @@ function MuxPlayerPage() {
           style={{ objectFit: 'contain', height: '100%' }}
           slot="poster"
           src="https://image.mux.com/VcmKA6aqzIzlg3MayLJDnbF55kX00mds028Z65QxvBYaA/thumbnail.webp"
+          alt=""
         />
       </MuxPlayer>
-
-      <br/>
-      <Link href="/"><a>Browse Elements</a></Link>
     </>
   );
 }

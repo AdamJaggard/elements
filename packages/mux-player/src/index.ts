@@ -1,20 +1,27 @@
 import { globalThis, document } from './polyfills';
 import { MediaController } from 'media-chrome';
+import { Attributes as MediaControllerAttributes } from 'media-chrome/dist/media-container.js';
+import { MediaUIAttributes } from 'media-chrome/dist/constants.js';
 import 'media-chrome/dist/experimental/index.js';
 import { MediaThemeElement } from 'media-chrome/dist/media-theme-element.js';
 import MuxVideoElement, { MediaError, Attributes as MuxVideoAttributes } from '@mux/mux-video';
 import {
-  ValueOf,
-  Metadata,
   StreamTypes,
   PlaybackTypes,
-  PlaybackEngine,
   addTextTrack,
   removeTextTrack,
   CmcdTypes,
   CmcdTypeValues,
 } from '@mux/playback-core';
-import VideoApiElement, { initVideoApi } from './video-api';
+import type {
+  ValueOf,
+  Metadata,
+  PlaybackEngine,
+  MaxResolutionValue,
+  MinResolutionValue,
+  RenditionOrderValue,
+} from '@mux/playback-core';
+import VideoApiElement from './video-api';
 import {
   getPlayerVersion,
   toPropName,
@@ -30,11 +37,13 @@ import { toNumberOrUndefined, i18n, parseJwt, containsComposedNode, camelCase, k
 import * as logger from './logger';
 import type { MuxTemplateProps, ErrorEvent } from './types';
 import './themes/gerwig';
+import { HlsConfig } from 'hls.js';
 const DefaultThemeName = 'gerwig';
 
 export { MediaError };
 export type Tokens = {
   playback?: string;
+  drm?: string;
   thumbnail?: string;
   storyboard?: string;
 };
@@ -55,6 +64,7 @@ const PlayerAttributes = {
   PLAYBACK_TOKEN: 'playback-token',
   THUMBNAIL_TOKEN: 'thumbnail-token',
   STORYBOARD_TOKEN: 'storyboard-token',
+  DRM_TOKEN: 'drm-token',
   STORYBOARD_SRC: 'storyboard-src',
   THUMBNAIL_TIME: 'thumbnail-time',
   AUDIO: 'audio',
@@ -62,17 +72,21 @@ const PlayerAttributes = {
   HOTKEYS: 'hotkeys',
   PLAYBACK_RATES: 'playbackrates',
   DEFAULT_SHOW_REMAINING_TIME: 'default-show-remaining-time',
+  DEFAULT_DURATION: 'default-duration',
   TITLE: 'title',
   PLACEHOLDER: 'placeholder',
   THEME: 'theme',
   DEFAULT_STREAM_TYPE: 'default-stream-type',
   TARGET_LIVE_WINDOW: 'target-live-window',
+  EXTRA_SOURCE_PARAMS: 'extra-source-params',
   NO_VOLUME_PREF: 'no-volume-pref',
+  CAST_RECEIVER: 'cast-receiver',
 };
 
 const ThemeAttributeNames = [
   'audio',
   'backwardseekoffset',
+  'defaultduration',
   'defaultshowremainingtime',
   'defaultsubtitles',
   'noautoseektolive',
@@ -97,7 +111,7 @@ function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
     // Give priority to playbackId derrived asset URL's if playbackId is set.
     src: !el.playbackId && el.src,
     playbackId: el.playbackId,
-    hasSrc: !!el.playbackId || !!el.src,
+    hasSrc: !!el.playbackId || !!el.src || !!el.currentSrc,
     poster: el.poster,
     storyboard: el.storyboard,
     storyboardSrc: el.getAttribute(PlayerAttributes.STORYBOARD_SRC),
@@ -119,10 +133,15 @@ function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
     envKey: el.envKey,
     preferCmcd: el.preferCmcd,
     debug: el.debug,
+    disableTracking: el.disableTracking,
     disableCookies: el.disableCookies,
     tokens: el.tokens,
     beaconCollectionDomain: el.beaconCollectionDomain,
     maxResolution: el.maxResolution,
+    minResolution: el.minResolution,
+    programStartTime: el.programStartTime,
+    programEndTime: el.programEndTime,
+    renditionOrder: el.renditionOrder,
     metadata: el.metadata,
     playerSoftwareName: el.playerSoftwareName,
     playerSoftwareVersion: el.playerSoftwareVersion,
@@ -132,19 +151,24 @@ function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
     defaultStreamType: el.defaultStreamType,
     targetLiveWindow: el.getAttribute(MuxVideoAttributes.TARGET_LIVE_WINDOW),
     streamType: getStreamTypeFromAttr(el.getAttribute(MuxVideoAttributes.STREAM_TYPE)),
-    primaryColor: el.primaryColor,
-    secondaryColor: el.secondaryColor,
-    accentColor: el.accentColor,
+    primaryColor: el.getAttribute(PlayerAttributes.PRIMARY_COLOR),
+    secondaryColor: el.getAttribute(PlayerAttributes.SECONDARY_COLOR),
+    accentColor: el.getAttribute(PlayerAttributes.ACCENT_COLOR),
     forwardSeekOffset: el.forwardSeekOffset,
     backwardSeekOffset: el.backwardSeekOffset,
     defaultHiddenCaptions: el.defaultHiddenCaptions,
+    defaultDuration: el.defaultDuration,
     defaultShowRemainingTime: el.defaultShowRemainingTime,
     hideDuration: getHideDuration(el),
     playbackRates: el.getAttribute(PlayerAttributes.PLAYBACK_RATES),
     customDomain: el.getAttribute(MuxVideoAttributes.CUSTOM_DOMAIN) ?? undefined,
     title: el.getAttribute(PlayerAttributes.TITLE),
     novolumepref: el.hasAttribute(PlayerAttributes.NO_VOLUME_PREF),
+    castReceiver: el.castReceiver,
     ...state,
+    // NOTE: since the attribute value is used as the "source of truth" for the property getter,
+    // moving this below the `...state` spread so it resolves to the default value when unset (CJP)
+    extraSourceParams: el.extraSourceParams,
   };
 
   return props;
@@ -154,8 +178,7 @@ function getThemeTemplate(el: MuxPlayerElement) {
   let themeName = el.theme;
 
   if (themeName) {
-    // @ts-ignore
-    const templateElement = el.getRootNode()?.getElementById?.(themeName);
+    const templateElement = (el.getRootNode() as ShadowRoot | Document | null)?.getElementById?.(themeName);
     // NOTE: Since folks may unknowingly use matching ids for elements other than their theme
     // (intending to use path two for template identification, below), make sure the matching
     // element is, in fact, an HTMLTemplateElement (CJP)
@@ -209,9 +232,12 @@ const initialState = {
   isDialogOpen: false,
 };
 
+const DEFAULT_EXTRA_PLAYLIST_PARAMS = { redundant_streams: true };
+
 export interface MuxPlayerElementEventMap extends HTMLVideoElementEventMap {
   cuepointchange: CustomEvent<{ time: number; value: any }>;
   cuepointschange: CustomEvent<Array<{ time: number; value: any }>>;
+  chapterchange: CustomEvent<{ startTime: number; endTime: number; value: string }>;
 }
 
 interface MuxPlayerElement
@@ -317,18 +343,20 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
       logger.error(`<media-controller> failed to upgrade!`);
     }
 
-    initVideoApi(this);
+    this.init();
 
     this.#setUpThemeAttributes();
     this.#setUpErrors();
     this.#setUpCaptionsButton();
-    this.#userInactive = this.mediaController?.hasAttribute('userinactive') ?? true;
+    this.#userInactive = this.mediaController?.hasAttribute(MediaControllerAttributes.USER_INACTIVE) ?? true;
     this.#setUpCaptionsMovement();
+
     // NOTE: Make sure we re-render when stream type changes to ensure other props-driven
     // template details get updated appropriately (e.g. thumbnails track) (CJP)
-    this.media?.addEventListener('streamtypechange', () => {
-      this.#render();
-    });
+    this.media?.addEventListener('streamtypechange', () => this.#render());
+
+    // NOTE: Make sure we re-render when <source> tags are appended so hasSrc is updated.
+    this.media?.addEventListener('loadstart', () => this.#render());
   }
 
   #setupCSSProperties() {
@@ -485,11 +513,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   }
 
   #setUpCaptionsMovement() {
-    // Any Safari
-    const isSafari = /.*Version\/.*Safari\/.*/.test(navigator.userAgent);
     const isFirefox = /Firefox/i.test(navigator.userAgent);
-
-    // skip if not firefox
     if (!isFirefox) return;
 
     let selectedTrack: TextTrack;
@@ -516,6 +540,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
         // - cues that are not at the bottom
         //   - line is less than -5
         //   - line is between 0 and 10
+        // @ts-ignore
         if (!cue.snapToLines || cue.line < -5 || (cue.line >= 0 && cue.line < 10)) {
           return;
         }
@@ -525,11 +550,10 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
           // for cues that have more than one line, we want to push the cue further up
           const lines = cue.text.split('\n').length;
           // start at -3 to account for thumbnails as well.
-          // default safari styles are taller than other browsers
-          let offset = isSafari ? -2 : -3;
+          let offset = -3;
 
           if (this.streamType === StreamTypes.LIVE) {
-            offset = isSafari ? -1 : -2;
+            offset = -2;
           }
 
           const setTo = offset - lines;
@@ -545,8 +569,6 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
             cuesmap.set(cue, cue.line);
           }
 
-          // we have to set line to 0 first due to a chrome bug https://crbug.com/1308892
-          cue.line = setTo - 1;
           cue.line = setTo;
         } else {
           setTimeout(() => {
@@ -558,7 +580,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
 
     // this is necessary so that if a cue becomes active while the user is active, we still position it above the control bar
     const cuechangeHandler = () => {
-      toggleLines(selectedTrack, this.mediaController?.hasAttribute('userinactive') ?? false);
+      toggleLines(selectedTrack, this.mediaController?.hasAttribute(MediaControllerAttributes.USER_INACTIVE) ?? false);
     };
 
     const selectTrack = () => {
@@ -582,20 +604,8 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     this.textTracks?.addEventListener('change', selectTrack);
     this.textTracks?.addEventListener('addtrack', selectTrack);
 
-    if (navigator.userAgent.includes('Chrome/')) {
-      const chromeWorkaround = () => {
-        toggleLines(selectedTrack, this.#userInactive, true);
-        if (!this.paused) {
-          window.requestAnimationFrame(chromeWorkaround);
-        }
-      };
-      this.addEventListener('playing', () => {
-        chromeWorkaround();
-      });
-    }
-
     this.addEventListener('userinactivechange', () => {
-      const newUserInactive = this.mediaController?.hasAttribute('userinactive') ?? true;
+      const newUserInactive = this.mediaController?.hasAttribute(MediaControllerAttributes.USER_INACTIVE) ?? true;
 
       if (this.#userInactive === newUserInactive) {
         return;
@@ -628,20 +638,35 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
         break;
       }
       case PlayerAttributes.THUMBNAIL_TOKEN: {
-        const { aud } = parseJwt(newValue);
-        if (newValue && aud !== 't') {
-          logger.warn(
-            i18n(`The provided thumbnail-token should have audience value 't' instead of '{aud}'.`).format({ aud })
-          );
+        if (newValue) {
+          const { aud } = parseJwt(newValue);
+          if (aud !== 't') {
+            logger.warn(
+              i18n(`The provided thumbnail-token should have audience value 'd' instead of '{aud}'.`).format({ aud })
+            );
+          }
         }
         break;
       }
       case PlayerAttributes.STORYBOARD_TOKEN: {
-        const { aud } = parseJwt(newValue);
-        if (newValue && aud !== 's') {
-          logger.warn(
-            i18n(`The provided storyboard-token should have audience value 's' instead of '{aud}'.`).format({ aud })
-          );
+        if (newValue) {
+          const { aud } = parseJwt(newValue);
+          if (aud !== 's') {
+            logger.warn(
+              i18n(`The provided storyboard-token should have audience value 'd' instead of '{aud}'.`).format({ aud })
+            );
+          }
+        }
+        break;
+      }
+      case PlayerAttributes.DRM_TOKEN: {
+        if (newValue) {
+          const { aud } = parseJwt(newValue);
+          if (aud !== 'd') {
+            logger.warn(
+              i18n(`The provided drm-token should have audience value 'd' instead of '{aud}'.`).format({ aud })
+            );
+          }
         }
         break;
       }
@@ -683,7 +708,14 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
           // NOTE: For now, since we are continuing support of the deprecated stream types (namely, "dvr" types) and not advertising the
           // new APIs such as `targetLiveWindow`/`target-live-window`, we will (presumpuously) update the `targetLiveWindow` based on the
           // stream type (CJP).
-          this.targetLiveWindow = newValue === StreamTypes.LIVE ? 0 : Number.NaN;
+          if (newValue === StreamTypes.LIVE) {
+            // Don't override if the user has already set a value.
+            if (this.getAttribute(PlayerAttributes.TARGET_LIVE_WINDOW) == null) {
+              this.targetLiveWindow = 0;
+            }
+          } else {
+            this.targetLiveWindow = Number.NaN;
+          }
         }
       }
     }
@@ -717,11 +749,11 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   }
 
   get hasPlayed() {
-    return this.mediaController?.hasAttribute('media-has-played') ?? false;
+    return this.mediaController?.hasAttribute(MediaUIAttributes.MEDIA_HAS_PLAYED) ?? false;
   }
 
   get inLiveWindow() {
-    return this.mediaController?.hasAttribute('media-time-is-live');
+    return this.mediaController?.hasAttribute(MediaUIAttributes.MEDIA_TIME_IS_LIVE);
   }
 
   get _hls(): PlaybackEngine | undefined {
@@ -835,13 +867,22 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   get poster() {
     const val = this.getAttribute(VideoAttributes.POSTER);
     if (val != null) return val;
+    // If a playback token but no thumbnail token is provided,
+    // assume a token is required for the thumbnail/poster URL and
+    // simply avoid requesting it in this case.
+    const { tokens } = this;
+    if (tokens.playback && !tokens.thumbnail) {
+      logger.warn('Missing expected thumbnail token. No poster image will be shown');
+      return undefined;
+    }
 
     // Get the derived poster if a playbackId is present.
     if (this.playbackId && !this.audio) {
       return getPosterURLFromPlaybackId(this.playbackId, {
-        domain: this.customDomain,
+        customDomain: this.customDomain,
         thumbnailTime: this.thumbnailTime ?? this.startTime,
-        token: this.tokens.thumbnail,
+        programTime: this.programStartTime,
+        token: tokens.thumbnail,
       });
     }
 
@@ -882,21 +923,28 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
    * we aren't an audio player and the stream-type isn't live.
    */
   get storyboard() {
+    const { tokens } = this;
     // If the storyboardSrc has been explicitly set, assume it should be used
-    if (this.storyboardSrc && !this.tokens.storyboard) return this.storyboardSrc;
+    if (this.storyboardSrc && !tokens.storyboard) return this.storyboardSrc;
     if (
       // NOTE: Some audio use cases may have a storyboard (e.g. it's an audio+video stream being played *as* audio)
       // Consider supporting cases (CJP)
       this.audio ||
       !this.playbackId ||
       !this.streamType ||
-      [StreamTypes.LIVE, StreamTypes.UNKNOWN].includes(this.streamType as any)
+      [StreamTypes.LIVE, StreamTypes.UNKNOWN].includes(this.streamType as any) ||
+      // If a playback token but no storyboard token is provided,
+      // assume a token is required for the storyboard URL URL and
+      // simply avoid requesting it in this case.
+      (tokens.playback && !tokens.storyboard)
     ) {
       return undefined;
     }
     return getStoryboardURLFromPlaybackId(this.playbackId, {
-      domain: this.customDomain,
-      token: this.tokens.storyboard,
+      customDomain: this.customDomain,
+      token: tokens.storyboard,
+      programStartTime: this.programStartTime,
+      programEndTime: this.programEndTime,
     });
   }
 
@@ -1135,6 +1183,25 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   }
 
   /**
+   * Get the boolean value of default hidden captions.
+   * By default returns false so captions are enabled on initial load.
+   */
+  get defaultDuration() {
+    return toNumberOrUndefined(this.getAttribute(PlayerAttributes.DEFAULT_DURATION));
+  }
+
+  /**
+   * Set the default hidden captions flag.
+   */
+  set defaultDuration(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(PlayerAttributes.DEFAULT_DURATION);
+    } else {
+      this.setAttribute(PlayerAttributes.DEFAULT_DURATION, `${val}`);
+    }
+  }
+
+  /**
    * Get the player software name. Used by Mux Data.
    */
   get playerSoftwareName() {
@@ -1170,16 +1237,90 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   }
 
   get maxResolution() {
-    return this.getAttribute(MuxVideoAttributes.MAX_RESOLUTION) ?? undefined;
+    return (this.getAttribute(MuxVideoAttributes.MAX_RESOLUTION) as MaxResolutionValue) ?? undefined;
   }
 
-  set maxResolution(val: string | undefined) {
+  set maxResolution(val: MaxResolutionValue | undefined) {
     if (val === this.maxResolution) return;
 
     if (val) {
       this.setAttribute(MuxVideoAttributes.MAX_RESOLUTION, val);
     } else {
       this.removeAttribute(MuxVideoAttributes.MAX_RESOLUTION);
+    }
+  }
+
+  get minResolution() {
+    return (this.getAttribute(MuxVideoAttributes.MIN_RESOLUTION) as MinResolutionValue) ?? undefined;
+  }
+
+  set minResolution(val: MinResolutionValue | undefined) {
+    if (val === this.minResolution) return;
+
+    if (val) {
+      this.setAttribute(MuxVideoAttributes.MIN_RESOLUTION, val);
+    } else {
+      this.removeAttribute(MuxVideoAttributes.MIN_RESOLUTION);
+    }
+  }
+
+  get renditionOrder() {
+    return (this.getAttribute(MuxVideoAttributes.RENDITION_ORDER) as RenditionOrderValue) ?? undefined;
+  }
+
+  set renditionOrder(val: RenditionOrderValue | undefined) {
+    if (val === this.renditionOrder) return;
+
+    if (val) {
+      this.setAttribute(MuxVideoAttributes.RENDITION_ORDER, val);
+    } else {
+      this.removeAttribute(MuxVideoAttributes.RENDITION_ORDER);
+    }
+  }
+
+  get programStartTime() {
+    return toNumberOrUndefined(this.getAttribute(MuxVideoAttributes.PROGRAM_START_TIME));
+  }
+
+  set programStartTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(MuxVideoAttributes.PROGRAM_START_TIME);
+    } else {
+      this.setAttribute(MuxVideoAttributes.PROGRAM_START_TIME, `${val}`);
+    }
+  }
+
+  get programEndTime() {
+    return toNumberOrUndefined(this.getAttribute(MuxVideoAttributes.PROGRAM_END_TIME));
+  }
+
+  set programEndTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(MuxVideoAttributes.PROGRAM_END_TIME);
+    } else {
+      this.setAttribute(MuxVideoAttributes.PROGRAM_END_TIME, `${val}`);
+    }
+  }
+
+  get extraSourceParams() {
+    if (!this.hasAttribute(PlayerAttributes.EXTRA_SOURCE_PARAMS)) {
+      return DEFAULT_EXTRA_PLAYLIST_PARAMS;
+    }
+
+    return [...new URLSearchParams(this.getAttribute(PlayerAttributes.EXTRA_SOURCE_PARAMS) as string).entries()].reduce(
+      (paramsObj, [k, v]) => {
+        paramsObj[k] = v;
+        return paramsObj;
+      },
+      {} as Record<string, any>
+    );
+  }
+
+  set extraSourceParams(value: Record<string, any>) {
+    if (value == null) {
+      this.removeAttribute(PlayerAttributes.EXTRA_SOURCE_PARAMS);
+    } else {
+      this.setAttribute(PlayerAttributes.EXTRA_SOURCE_PARAMS, new URLSearchParams(value).toString());
     }
   }
 
@@ -1255,6 +1396,20 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   }
 
   /**
+   * Get video engine disable tracking flag.
+   */
+  get disableTracking() {
+    return getVideoAttribute(this, MuxVideoAttributes.DISABLE_TRACKING) != null;
+  }
+
+  /**
+   * Set video engine disable tracking flag.
+   */
+  set disableTracking(val) {
+    this.toggleAttribute(MuxVideoAttributes.DISABLE_TRACKING, !!val);
+  }
+
+  /**
    * Get video engine disable cookies flag.
    */
   get disableCookies() {
@@ -1262,7 +1417,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
   }
 
   /**
-   * Set video engine debug flag.
+   * Set video engine disable cookies flag.
    */
   set disableCookies(val) {
     if (val) {
@@ -1312,7 +1467,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
 
   set targetLiveWindow(val: number | undefined) {
     // don't cause an infinite loop and avoid change event dispatching
-    if (val == this.targetLiveWindow) return;
+    if (val == this.targetLiveWindow || (Number.isNaN(val) && Number.isNaN(this.targetLiveWindow))) return;
 
     if (val == null) {
       this.removeAttribute(PlayerAttributes.TARGET_LIVE_WINDOW);
@@ -1376,6 +1531,27 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     this.media.metadata = { ...getMetadataFromAttrs(this), ...val };
   }
 
+  /**
+   * Get the metadata object for Mux Data.
+   */
+  get _hlsConfig() {
+    return this.media?._hlsConfig;
+  }
+
+  /**
+   * Set the metadata object for Mux Data.
+   */
+  set _hlsConfig(val: Readonly<Partial<HlsConfig>> | undefined) {
+    this.#init();
+
+    // NOTE: This condition should never be met. If it is, there is a bug (CJP)
+    if (!this.media) {
+      logger.error('underlying media element missing when trying to set _hlsConfig. _hlsConfig will not be set.');
+      return;
+    }
+    this.media._hlsConfig = val;
+  }
+
   async addCuePoints<T = any>(cuePoints: { time: number; value: T }[]) {
     this.#init();
 
@@ -1395,6 +1571,26 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     return this.media?.cuePoints ?? [];
   }
 
+  addChapters(chapters: { startTime: number; endTime: number; value: string }[]) {
+    this.#init();
+
+    // NOTE: This condition should never be met. If it is, there is a bug (CJP)
+    if (!this.media) {
+      logger.error('underlying media element missing when trying to addChapters. chapters will not be added.');
+      return;
+    }
+
+    return this.media?.addChapters(chapters);
+  }
+
+  get activeChapter() {
+    return this.media?.activeChapter;
+  }
+
+  get chapters() {
+    return this.media?.chapters ?? [];
+  }
+
   getStartDate() {
     return this.media?.getStartDate();
   }
@@ -1408,11 +1604,13 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
    */
   get tokens(): Tokens {
     const playback = this.getAttribute(PlayerAttributes.PLAYBACK_TOKEN);
+    const drm = this.getAttribute(PlayerAttributes.DRM_TOKEN);
     const thumbnail = this.getAttribute(PlayerAttributes.THUMBNAIL_TOKEN);
     const storyboard = this.getAttribute(PlayerAttributes.STORYBOARD_TOKEN);
     return {
       ...this.#tokens,
       ...(playback != null ? { playback } : {}),
+      ...(drm != null ? { drm } : {}),
       ...(thumbnail != null ? { thumbnail } : {}),
       ...(storyboard != null ? { storyboard } : {}),
     };
@@ -1437,6 +1635,20 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
    */
   set playbackToken(val) {
     this.setAttribute(PlayerAttributes.PLAYBACK_TOKEN, `${val}`);
+  }
+
+  /**
+   * Get the playback token for signing the src URL.
+   */
+  get drmToken() {
+    return this.getAttribute(PlayerAttributes.DRM_TOKEN) ?? undefined;
+  }
+
+  /**
+   * Set the playback token for signing the src URL.
+   */
+  set drmToken(val) {
+    this.setAttribute(PlayerAttributes.DRM_TOKEN, `${val}`);
   }
 
   /**
@@ -1481,6 +1693,34 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
 
   get textTracks() {
     return this.media?.textTracks;
+  }
+
+  get castReceiver(): string | undefined {
+    return this.getAttribute(PlayerAttributes.CAST_RECEIVER) ?? undefined;
+  }
+
+  set castReceiver(val: string | undefined) {
+    if (val === this.castReceiver) return;
+    if (val) {
+      this.setAttribute(PlayerAttributes.CAST_RECEIVER, val);
+    } else {
+      this.removeAttribute(PlayerAttributes.CAST_RECEIVER);
+    }
+  }
+
+  get castCustomData() {
+    return this.media?.castCustomData;
+  }
+
+  set castCustomData(val) {
+    // NOTE: This condition should never be met. If it is, there is a bug (CJP)
+    if (!this.media) {
+      logger.error(
+        'underlying media element missing when trying to set castCustomData. castCustomData will not be set.'
+      );
+      return;
+    }
+    this.media.castCustomData = val;
   }
 }
 

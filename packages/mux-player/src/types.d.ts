@@ -1,6 +1,12 @@
 import type MuxVideoElement from '@mux/mux-video';
 import type { MediaError } from '@mux/mux-video';
-import type { StreamTypes, ValueOf } from '@mux/playback-core';
+import type {
+  MaxResolutionValue,
+  MinResolutionValue,
+  RenditionOrderValue,
+  StreamTypes,
+  ValueOf,
+} from '@mux/playback-core';
 import type { AttributeTokenList } from './helpers';
 
 export type MuxPlayerProps = Partial<MuxVideoElement> & {
@@ -27,14 +33,19 @@ export type MuxTemplateProps = Partial<MuxPlayerProps> & {
   novolumepref: boolean;
   playbackRates: string;
   defaultShowRemainingTime: boolean;
+  defaultDuration?: number;
   hideDuration: boolean;
   onCloseErrorDialog: (evt: CustomEvent) => void;
   onInitFocusDialog: (evt: CustomEvent) => void;
   dialog: DialogOptions;
   inLiveWindow: boolean;
-  maxResolution?: string;
+  maxResolution?: MaxResolutionValue;
+  minResolution?: MinResolutionValue;
+  renditionOrder?: RenditionOrderValue;
+  extraSourceParams?: Record<string, any>;
   tokens: {
     playback?: string;
+    drm?: string;
     thumbnail?: string;
     storyboard?: string;
   };
@@ -43,6 +54,7 @@ export type MuxTemplateProps = Partial<MuxPlayerProps> & {
   hotKeys: AttributeTokenList;
   title: string;
   defaultStreamType?: ValueOf<StreamTypes>;
+  castReceiver: string | undefined;
 };
 
 export type DialogOptions = {

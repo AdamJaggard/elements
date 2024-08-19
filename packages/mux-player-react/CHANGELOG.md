@@ -3,6 +3,173 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.9.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.9.0...@mux/mux-player-react@2.9.1) (2024-08-06)
+
+**Note:** Version bump only for package @mux/mux-player-react
+
+
+
+
+
+# [2.9.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.8.1...@mux/mux-player-react@2.9.0) (2024-08-02)
+
+
+### Bug Fixes
+
+* mark React 19 as peerdep ([#971](https://github.com/muxinc/elements/issues/971)) ([4f74ea0](https://github.com/muxinc/elements/commit/4f74ea0215407e5c9573d8dd4a91d2a855b864bb))
+
+
+### Features
+
+* Lerna bump mux-player-react so versions sync ([56df987](https://github.com/muxinc/elements/commit/56df987c413792aa8e5f762f931587f1c193b2bc))
+
+
+
+
+
+## [2.8.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.8.0...@mux/mux-player-react@2.8.1) (2024-07-26)
+
+**Note:** Version bump only for package @mux/mux-player-react
+
+
+
+
+
+# [2.8.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.7.0...@mux/mux-player-react@2.8.0) (2024-07-10)
+
+
+### Features
+
+* basic drm support ([#905](https://github.com/muxinc/elements/issues/905)) ([79acc9d](https://github.com/muxinc/elements/commit/79acc9d8cb520da469f1c72196befc384ee5b4f9))
+
+
+
+
+
+# [2.7.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.6.0...@mux/mux-player-react@2.7.0) (2024-05-28)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video, mux-video-react, mux-audio, mux-audio-react, playback-core:** pdt clipping ([#923](https://github.com/muxinc/elements/issues/923)) ([22e9b06](https://github.com/muxinc/elements/commit/22e9b06e2e0913a6c34ebea53f4bbeded969b5a4))
+* **playback-core, mux-video, mux-player:** addChapters interface ([#909](https://github.com/muxinc/elements/issues/909)) ([84392f1](https://github.com/muxinc/elements/commit/84392f14ee429b63ce26326e84e80e93bbdc70db))
+
+
+
+
+
+# [2.6.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.5.0...@mux/mux-player-react@2.6.0) (2024-05-03)
+
+
+### Features
+
+* **mux-player-react, mux-uploader-react, mux-audio-react, mux-video-react:** add client component directive ([#911](https://github.com/muxinc/elements/issues/911)) ([76aa003](https://github.com/muxinc/elements/commit/76aa003e9ad9488509650970b971edd3ed463592))
+
+
+
+
+
+# [2.5.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.4.1...@mux/mux-player-react@2.5.0) (2024-04-18)
+
+
+### Bug Fixes
+
+* **mux-player-react/lazy:** display placeholder before JS load ([#895](https://github.com/muxinc/elements/issues/895)) ([3abdbb8](https://github.com/muxinc/elements/commit/3abdbb8653ca9003736a147236723d7d90f3dc9f))
+* upgrade media-chrome, upchunk, React types ([#904](https://github.com/muxinc/elements/issues/904)) ([1090ad6](https://github.com/muxinc/elements/commit/1090ad690261acd7ac1ab68b45801c46be1c2d0c))
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/muxinc/elements/issues/897)) ([fd91d94](https://github.com/muxinc/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+
+
+### Features
+
+* add `disable-tracking` attribute and prop ([#900](https://github.com/muxinc/elements/issues/900)) ([0f5966e](https://github.com/muxinc/elements/commit/0f5966ec6cdf3cacde017a4ddd9c388bea3168d7))
+
+
+
+
+
+## [2.4.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.4.0...@mux/mux-player-react@2.4.1) (2024-03-29)
+
+**Note:** Version bump only for package @mux/mux-player-react
+
+
+
+
+
+# [2.4.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.3.3...@mux/mux-player-react@2.4.0) (2024-03-20)
+
+
+### Features
+
+* **mux-player-react:** Remove commented out code (feat to force mino… ([#890](https://github.com/muxinc/elements/issues/890)) ([9d48804](https://github.com/muxinc/elements/commit/9d48804bcc0d7df497caea40505599652596c195))
+
+
+
+
+
+## [2.3.3](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.3.2...@mux/mux-player-react@2.3.3) (2024-02-16)
+
+**Note:** Version bump only for package @mux/mux-player-react
+
+
+
+
+
+## [2.3.2](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.3.1...@mux/mux-player-react@2.3.2) (2024-01-19)
+
+**Note:** Version bump only for package @mux/mux-player-react
+
+
+
+
+
+## [2.3.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.3.0...@mux/mux-player-react@2.3.1) (2024-01-02)
+
+**Note:** Version bump only for package @mux/mux-player-react
+
+
+
+
+
+# [2.3.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.2.0...@mux/mux-player-react@2.3.0) (2023-12-07)
+
+
+### Bug Fixes
+
+* Adding unofficial _hlsConfig to media elements and playback core. ([#833](https://github.com/muxinc/elements/issues/833)) ([b86f6e6](https://github.com/muxinc/elements/commit/b86f6e6eb2c116d1d676fbaecd46d77a0baa3416)), closes [#792](https://github.com/muxinc/elements/issues/792)
+* **mux-player-react:** add disablePictureInPicture to TS def ([9fd9978](https://github.com/muxinc/elements/commit/9fd99780047d24e3efdb61ddc31ba7e8346415f3)), closes [#831](https://github.com/muxinc/elements/issues/831)
+
+
+### Features
+
+* **mux-player, mux-player-react:** Add extra-source-params/extraSourceParams attr/prop for advanced usage. ([a5ad6ed](https://github.com/muxinc/elements/commit/a5ad6ed3da0aafb52f983c91881126d74c884157))
+* **mux-player, mux-player-react:** default duration ([#844](https://github.com/muxinc/elements/issues/844)) ([8d52572](https://github.com/muxinc/elements/commit/8d52572330089076a6d05ff33fa0f596e18799ff))
+
+
+
+
+
+# [2.2.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.1.0...@mux/mux-player-react@2.2.0) (2023-10-31)
+
+
+### Features
+
+* **mux-player-react:** Force bump ([#806](https://github.com/muxinc/elements/issues/806)) ([101d04a](https://github.com/muxinc/elements/commit/101d04a00fb85d79fa036a40103bb054f26e0b78))
+
+
+
+
+
+# [2.1.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.0.1...@mux/mux-player-react@2.1.0) (2023-10-24)
+
+
+### Features
+
+* Manifest manipulation and other media stream query param props. ([954b2c8](https://github.com/muxinc/elements/commit/954b2c80d7df88bb4585c46a15dd1185d56dcf9a))
+
+
+
+
+
 ## [2.0.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.0.0...@mux/mux-player-react@2.0.1) (2023-10-03)
 
 **Note:** Version bump only for package @mux/mux-player-react

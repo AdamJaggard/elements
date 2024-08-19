@@ -2,17 +2,17 @@ import Link from "next/link";
 import Head from "next/head";
 import type { GetStaticProps } from "next";
 
-import muxBlurHash from '@mux/blurhash'
+import muxBlurUp from '@mux/blurup'
 
 import MuxPlayerLazy from '@mux/mux-player-react/lazy';
 
 type Props = {
   playbackId: string
-  blurHashBase64: string
-  sourceWidth: number
-  sourceHeight: number
+  blurDataURL: string
+  aspectRatio: number
 }
-function MuxPlayerLazyPage({ playbackId, blurHashBase64, sourceWidth, sourceHeight }: Props) {
+
+function MuxPlayerLazyPage({ playbackId, blurDataURL, aspectRatio }: Props) {
   return (
     <>
       <Head>
@@ -22,31 +22,29 @@ function MuxPlayerLazyPage({ playbackId, blurHashBase64, sourceWidth, sourceHeig
       <h3>Scroll down too see the Lazy Mux Player ↓</h3>
       <pre style={{ minHeight: '100vh' }}>
         <code>
-          {`import muxBlurHash from '@mux/blurhash'
+          {`import muxBlurUp from '@mux/blurup'
 
 import MuxPlayerLazy from '@mux/mux-player-react/lazy';
 
-function MuxPlayerLazyPage({ playbackId, blurHashBase64, sourceWidth, sourceHeight }) {
+function MuxPlayerLazyPage({ playbackId, blurDataURL, aspectRatio }) {
   return (
       <MuxPlayerLazy
         playbackId={playbackId}
-        placeholder={blurHashBase64}
-        style={{ aspectRatio: \`\${sourceWidth}/\${sourceHeight}\` }}
-        streamType="on-demand"
+        placeholder={blurDataURL}
+        style={{ aspectRatio }}
       />
   );
 }
 
 export const getStaticProps = async () => {
   const playbackId = "a4nOgmxGWg6gULfcBbAa00gXyfcwPnAFldF8RdsNyk8M"
-  const { blurHashBase64, sourceWidth, sourceHeight } = await muxBlurHash(playbackId)
+  const { blurDataURL, aspectRatio } = await muxBlurUp(playbackId)
 
   return {
     props: {
       playbackId,
-      blurHashBase64,
-      sourceWidth,
-      sourceHeight
+      blurDataURL,
+      aspectRatio,
     }
   }
 }
@@ -58,27 +56,22 @@ export default MuxPlayerLazyPage;
 
       <MuxPlayerLazy
         playbackId={playbackId}
-        placeholder={blurHashBase64}
-        style={{ aspectRatio: `${sourceWidth}/${sourceHeight}` }}
-        streamType="on-demand"
+        placeholder={blurDataURL}
+        style={{ aspectRatio }}
       />
-
-      <br/>
-      <Link href="/">Browse Elements</Link>
     </>
   );
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
   const playbackId = "a4nOgmxGWg6gULfcBbAa00gXyfcwPnAFldF8RdsNyk8M"
-  const { blurHashBase64, sourceWidth, sourceHeight } = await muxBlurHash(playbackId)
+  const { blurDataURL, aspectRatio } = await muxBlurUp(playbackId)
 
   return {
     props: {
       playbackId,
-      blurHashBase64,
-      sourceWidth,
-      sourceHeight
+      blurDataURL,
+      aspectRatio,
     }
   }
 }

@@ -54,13 +54,13 @@ describe('playback core', function () {
     await new Promise((resolve) => video.addEventListener('error', resolve));
 
     assert.equal(video.error.code, MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
-    assert.equal(video.error.message, '');
+    assert(video.error.message != undefined, 'has some message');
 
     assert.equal(getError(video).code, MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
-    assert.equal(
-      getError(video).message,
-      'An unsupported error occurred. The server or network failed, or your browser does not support this format.'
-    );
+    const expectedMessage = !!video.error.message
+      ? video.error.message
+      : MediaError.defaultMessages[MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED];
+    assert.equal(getError(video).message, expectedMessage);
   });
 
   it('setAutoplay("any")', async function () {
@@ -190,15 +190,37 @@ describe('playback core', function () {
   });
 
   it('toMuxVideoURL should format the correct m3u8 URL', function () {
-    assert.equal(toMuxVideoURL('123'), `https://stream.mux.com/123.m3u8`);
-    assert.equal(toMuxVideoURL('123', { domain: 'media.example.com' }), `https://stream.media.example.com/123.m3u8`);
+    assert.equal(toMuxVideoURL({ playbackId: '123' }), `https://stream.mux.com/123.m3u8`);
     assert.equal(
-      toMuxVideoURL('123', { maxResolution: '720p' }),
+      toMuxVideoURL({ playbackId: '123', customDomain: 'media.example.com' }),
+      `https://stream.media.example.com/123.m3u8`
+    );
+    assert.equal(
+      toMuxVideoURL({ playbackId: '123', maxResolution: '720p' }),
       `https://stream.mux.com/123.m3u8?max_resolution=720p`
     );
     assert.equal(
-      toMuxVideoURL('123?redundant_streams=true', { maxResolution: '720p' }),
+      toMuxVideoURL({ playbackId: '123?redundant_streams=true', maxResolution: '720p' }),
       `https://stream.mux.com/123.m3u8?redundant_streams=true&max_resolution=720p`
+    );
+    assert.equal(toMuxVideoURL({ customDomain: 'media.example.com', maxResultion: '720p' }), undefined);
+    assert.equal(
+      toMuxVideoURL({
+        playbackId: '123?redundant_streams=true',
+        renditionOrder: 'desc',
+        tokens: { playback: 'PLAYBACK-TOKEN' },
+      }),
+      `https://stream.mux.com/123.m3u8?token=PLAYBACK-TOKEN`
+    );
+    assert.equal(
+      toMuxVideoURL({
+        playbackId: '123?redundant_streams=true',
+        minResolution: '720p',
+        extraSourceParams: {
+          extra_extra: 'readallaboutit',
+        },
+      }),
+      `https://stream.mux.com/123.m3u8?redundant_streams=true&min_resolution=720p&extra_extra=readallaboutit`
     );
   });
 

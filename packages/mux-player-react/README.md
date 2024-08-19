@@ -37,7 +37,6 @@ import MuxPlayer from '@mux/mux-player-react';
     video_title: 'Bick Buck Bunny',
     viewer_user_id: 'user-id-bc-789',
   }}
-  streamType="on-demand"
 />;
 ```
 
@@ -56,7 +55,6 @@ import MuxPlayer from '@mux/mux-player-react/lazy';
     video_title: 'Bick Buck Bunny',
     viewer_user_id: 'user-id-bc-789',
   }}
-  streamType="on-demand"
 />;
 ```
 
@@ -67,4 +65,3 @@ If you are generating your pages with a Node.js server (for example, [Next.js](h
 Docs and guides live on [docs.mux.com](https://docs.mux.com/guides/video/mux-player?utm_source=github-mux-player).
 
 API reference lives [on Github](./REFERENCE.md).
-

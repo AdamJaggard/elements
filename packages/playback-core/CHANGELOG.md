@@ -3,6 +3,161 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.25.2](https://github.com/muxinc/elements/compare/@mux/playback-core@0.25.1...@mux/playback-core@0.25.2) (2024-08-06)
+
+
+### Bug Fixes
+
+* Sentry seekable index error ([#972](https://github.com/muxinc/elements/issues/972)) ([05ed19b](https://github.com/muxinc/elements/commit/05ed19b134bd0d5905105f54c539ea7e946c2b45)), closes [#967](https://github.com/muxinc/elements/issues/967)
+
+
+
+
+
+## [0.25.1](https://github.com/muxinc/elements/compare/@mux/playback-core@0.25.0...@mux/playback-core@0.25.1) (2024-08-02)
+
+**Note:** Version bump only for package @mux/playback-core
+
+
+
+
+
+# [0.25.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.24.0...@mux/playback-core@0.25.0) (2024-07-10)
+
+
+### Bug Fixes
+
+* **playback-core:** pseudo-ended eval case where media is not attached. ([#932](https://github.com/muxinc/elements/issues/932)) ([7c57cdd](https://github.com/muxinc/elements/commit/7c57cdd5278079ed5672525c48f649e857c3fc84))
+* upgrade hls.js, custom-media-element, etc. ([#931](https://github.com/muxinc/elements/issues/931)) ([efb5c51](https://github.com/muxinc/elements/commit/efb5c514f65f017fdeea50682e1cdb15229cfd92)), closes [#927](https://github.com/muxinc/elements/issues/927)
+
+
+### Features
+
+* basic drm support ([#905](https://github.com/muxinc/elements/issues/905)) ([79acc9d](https://github.com/muxinc/elements/commit/79acc9d8cb520da469f1c72196befc384ee5b4f9))
+* **playback-core:** For widevine, prioritize L1 but fall back to L3. ([#939](https://github.com/muxinc/elements/issues/939)) ([f30dc74](https://github.com/muxinc/elements/commit/f30dc7455474fdca822971f527f953b70d94cd88))
+
+
+
+
+
+# [0.24.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.23.1...@mux/playback-core@0.24.0) (2024-05-28)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video, mux-video-react, mux-audio, mux-audio-react, playback-core:** pdt clipping ([#923](https://github.com/muxinc/elements/issues/923)) ([22e9b06](https://github.com/muxinc/elements/commit/22e9b06e2e0913a6c34ebea53f4bbeded969b5a4))
+* **playback-core, mux-video, mux-player:** addChapters interface ([#909](https://github.com/muxinc/elements/issues/909)) ([84392f1](https://github.com/muxinc/elements/commit/84392f14ee429b63ce26326e84e80e93bbdc70db))
+
+
+
+
+
+## [0.23.1](https://github.com/muxinc/elements/compare/@mux/playback-core@0.23.0...@mux/playback-core@0.23.1) (2024-05-03)
+
+
+### Bug Fixes
+
+* passthrough props to native media els ([#912](https://github.com/muxinc/elements/issues/912)) ([88a63db](https://github.com/muxinc/elements/commit/88a63db7dadc9aa3e09402f7c1be79a278b97c06))
+* **playback-core:** preload=none not respected for playlist stream info fetching with native safari playback. ([#916](https://github.com/muxinc/elements/issues/916)) ([33b2c11](https://github.com/muxinc/elements/commit/33b2c117aa230f602383771d08698c682173f144)), closes [#875](https://github.com/muxinc/elements/issues/875)
+
+
+
+
+
+# [0.23.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.22.4...@mux/playback-core@0.23.0) (2024-04-18)
+
+
+### Bug Fixes
+
+* add mux-embed types reference ([#899](https://github.com/muxinc/elements/issues/899)) ([2162973](https://github.com/muxinc/elements/commit/2162973f4fa54af882c1fc7be4bab88de6b18ccc))
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/muxinc/elements/issues/897)) ([fd91d94](https://github.com/muxinc/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+
+
+### Features
+
+* add `disable-tracking` attribute and prop ([#900](https://github.com/muxinc/elements/issues/900)) ([0f5966e](https://github.com/muxinc/elements/commit/0f5966ec6cdf3cacde017a4ddd9c388bea3168d7))
+* **playback-core, mux-video, mux-audio, mux-player:** Upg hls.js ([#902](https://github.com/muxinc/elements/issues/902)) ([a6a76b6](https://github.com/muxinc/elements/commit/a6a76b69e03867cc11c348d2b48e0160ea295309))
+
+
+
+
+
+## [0.22.4](https://github.com/muxinc/elements/compare/@mux/playback-core@0.22.3...@mux/playback-core@0.22.4) (2024-03-29)
+
+
+### Bug Fixes
+
+* **playback-core:** Make sure we do not apply holdback to seekable when live streams have ended. ([#891](https://github.com/muxinc/elements/issues/891)) ([138e83f](https://github.com/muxinc/elements/commit/138e83f5a6ac3040a8fc4c60253302344a2b9b79))
+
+
+
+
+
+## [0.22.3](https://github.com/muxinc/elements/compare/@mux/playback-core@0.22.2...@mux/playback-core@0.22.3) (2024-03-20)
+
+
+### Bug Fixes
+
+* **playback-core:** live seek and media chrome upgrade ([#883](https://github.com/muxinc/elements/issues/883)) ([94d11d9](https://github.com/muxinc/elements/commit/94d11d9656cf8560853daf6690d7705510fa9ce5))
+
+
+
+
+
+## [0.22.2](https://github.com/muxinc/elements/compare/@mux/playback-core@0.22.1...@mux/playback-core@0.22.2) (2024-02-16)
+
+
+### Bug Fixes
+
+* **playback-core:** pseudo ended stalled last frag ([#867](https://github.com/muxinc/elements/issues/867)) ([8990208](https://github.com/muxinc/elements/commit/8990208faddd356f540d05f9bc5fd6d3a39dd57a))
+
+
+
+
+
+## [0.22.1](https://github.com/muxinc/elements/compare/@mux/playback-core@0.22.0...@mux/playback-core@0.22.1) (2024-01-02)
+
+
+### Bug Fixes
+
+* media-tracks types not polluting global HTMLMediaElement ([#855](https://github.com/muxinc/elements/issues/855)) ([ce7235b](https://github.com/muxinc/elements/commit/ce7235bfab8b3e54d4731aaf944a121163286e6a))
+* target-live-window unneeded sprout ([#852](https://github.com/muxinc/elements/issues/852)) ([5d45a8f](https://github.com/muxinc/elements/commit/5d45a8f1fde45387e58e8ae985514dd303208107)), closes [#748](https://github.com/muxinc/elements/issues/748)
+* upgrade external deps, allow patches uniform ([#850](https://github.com/muxinc/elements/issues/850)) ([f72acf4](https://github.com/muxinc/elements/commit/f72acf49199497cb45c186bd4b2bc2a67e5431c0))
+
+
+
+
+
+# [0.22.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.21.0...@mux/playback-core@0.22.0) (2023-12-07)
+
+
+### Bug Fixes
+
+* Adding unofficial _hlsConfig to media elements and playback core. ([#833](https://github.com/muxinc/elements/issues/833)) ([b86f6e6](https://github.com/muxinc/elements/commit/b86f6e6eb2c116d1d676fbaecd46d77a0baa3416)), closes [#792](https://github.com/muxinc/elements/issues/792)
+* **playback-core:** narrow cmcd for cache ([#825](https://github.com/muxinc/elements/issues/825)) ([61a4cfe](https://github.com/muxinc/elements/commit/61a4cfe5d50431e9b38a8b43f8ea1d71c0d1521e))
+* ts error due to duplicate same dependency ([#837](https://github.com/muxinc/elements/issues/837)) ([411f382](https://github.com/muxinc/elements/commit/411f382ca9d701fae30bdf12d65b7c314f3e9618)), closes [#836](https://github.com/muxinc/elements/issues/836)
+* upgrade media-chrome + turbo ([#838](https://github.com/muxinc/elements/issues/838)) ([a7c4948](https://github.com/muxinc/elements/commit/a7c49488ccbc3c1a9d087775d8ee83298acd1e91))
+
+
+### Features
+
+* **mux-player, mux-player-react:** Add extra-source-params/extraSourceParams attr/prop for advanced usage. ([a5ad6ed](https://github.com/muxinc/elements/commit/a5ad6ed3da0aafb52f983c91881126d74c884157))
+
+
+
+
+
+# [0.21.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.20.2...@mux/playback-core@0.21.0) (2023-10-24)
+
+
+### Features
+
+* Manifest manipulation and other media stream query param props. ([954b2c8](https://github.com/muxinc/elements/commit/954b2c80d7df88bb4585c46a15dd1185d56dcf9a))
+
+
+
+
+
 ## [0.20.2](https://github.com/muxinc/elements/compare/@mux/playback-core@0.20.1...@mux/playback-core@0.20.2) (2023-10-03)
 
 

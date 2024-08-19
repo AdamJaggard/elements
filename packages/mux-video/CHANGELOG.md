@@ -3,6 +3,140 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.2](https://github.com/muxinc/elements/compare/@mux/mux-video@0.20.1...@mux/mux-video@0.20.2) (2024-08-06)
+
+**Note:** Version bump only for package @mux/mux-video
+
+
+
+
+
+## [0.20.1](https://github.com/muxinc/elements/compare/@mux/mux-video@0.20.0...@mux/mux-video@0.20.1) (2024-08-02)
+
+**Note:** Version bump only for package @mux/mux-video
+
+
+
+
+
+# [0.20.0](https://github.com/muxinc/elements/compare/@mux/mux-video@0.19.0...@mux/mux-video@0.20.0) (2024-07-10)
+
+
+### Bug Fixes
+
+* upgrade hls.js, custom-media-element, etc. ([#931](https://github.com/muxinc/elements/issues/931)) ([efb5c51](https://github.com/muxinc/elements/commit/efb5c514f65f017fdeea50682e1cdb15229cfd92)), closes [#927](https://github.com/muxinc/elements/issues/927)
+
+
+### Features
+
+* basic drm support ([#905](https://github.com/muxinc/elements/issues/905)) ([79acc9d](https://github.com/muxinc/elements/commit/79acc9d8cb520da469f1c72196befc384ee5b4f9))
+
+
+
+
+
+# [0.19.0](https://github.com/muxinc/elements/compare/@mux/mux-video@0.18.1...@mux/mux-video@0.19.0) (2024-05-28)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video, mux-video-react, mux-audio, mux-audio-react, playback-core:** pdt clipping ([#923](https://github.com/muxinc/elements/issues/923)) ([22e9b06](https://github.com/muxinc/elements/commit/22e9b06e2e0913a6c34ebea53f4bbeded969b5a4))
+* **playback-core, mux-video, mux-player:** addChapters interface ([#909](https://github.com/muxinc/elements/issues/909)) ([84392f1](https://github.com/muxinc/elements/commit/84392f14ee429b63ce26326e84e80e93bbdc70db))
+
+
+
+
+
+## [0.18.1](https://github.com/muxinc/elements/compare/@mux/mux-video@0.18.0...@mux/mux-video@0.18.1) (2024-05-03)
+
+**Note:** Version bump only for package @mux/mux-video
+
+
+
+
+
+# [0.18.0](https://github.com/muxinc/elements/compare/@mux/mux-video@0.17.5...@mux/mux-video@0.18.0) (2024-04-18)
+
+
+### Bug Fixes
+
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/muxinc/elements/issues/897)) ([fd91d94](https://github.com/muxinc/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+
+
+### Features
+
+* add `disable-tracking` attribute and prop ([#900](https://github.com/muxinc/elements/issues/900)) ([0f5966e](https://github.com/muxinc/elements/commit/0f5966ec6cdf3cacde017a4ddd9c388bea3168d7))
+* **playback-core, mux-video, mux-audio, mux-player:** Upg hls.js ([#902](https://github.com/muxinc/elements/issues/902)) ([a6a76b6](https://github.com/muxinc/elements/commit/a6a76b69e03867cc11c348d2b48e0160ea295309))
+
+
+
+
+
+## [0.17.5](https://github.com/muxinc/elements/compare/@mux/mux-video@0.17.4...@mux/mux-video@0.17.5) (2024-03-29)
+
+**Note:** Version bump only for package @mux/mux-video
+
+
+
+
+
+## [0.17.4](https://github.com/muxinc/elements/compare/@mux/mux-video@0.17.3...@mux/mux-video@0.17.4) (2024-03-20)
+
+**Note:** Version bump only for package @mux/mux-video
+
+
+
+
+
+## [0.17.3](https://github.com/muxinc/elements/compare/@mux/mux-video@0.17.2...@mux/mux-video@0.17.3) (2024-02-16)
+
+
+### Bug Fixes
+
+* **custom-media-element:** fix chapters & metadata tracks ([#871](https://github.com/muxinc/elements/issues/871)) ([4518456](https://github.com/muxinc/elements/commit/4518456b33ed4bb76253477c887939223ec692f0))
+
+
+
+
+
+## [0.17.2](https://github.com/muxinc/elements/compare/@mux/mux-video@0.17.1...@mux/mux-video@0.17.2) (2024-01-02)
+
+
+### Bug Fixes
+
+* media-tracks types not polluting global HTMLMediaElement ([#855](https://github.com/muxinc/elements/issues/855)) ([ce7235b](https://github.com/muxinc/elements/commit/ce7235bfab8b3e54d4731aaf944a121163286e6a))
+* upgrade custom-media-element ([#858](https://github.com/muxinc/elements/issues/858)) ([eb39e54](https://github.com/muxinc/elements/commit/eb39e546073c9c78b385809b27d095f36350737f))
+* upgrade external deps, allow patches uniform ([#850](https://github.com/muxinc/elements/issues/850)) ([f72acf4](https://github.com/muxinc/elements/commit/f72acf49199497cb45c186bd4b2bc2a67e5431c0))
+
+
+
+
+
+## [0.17.1](https://github.com/muxinc/elements/compare/@mux/mux-video@0.17.0...@mux/mux-video@0.17.1) (2023-12-07)
+
+
+### Bug Fixes
+
+* Adding unofficial _hlsConfig to media elements and playback core. ([#833](https://github.com/muxinc/elements/issues/833)) ([b86f6e6](https://github.com/muxinc/elements/commit/b86f6e6eb2c116d1d676fbaecd46d77a0baa3416)), closes [#792](https://github.com/muxinc/elements/issues/792)
+* ts error due to duplicate same dependency ([#837](https://github.com/muxinc/elements/issues/837)) ([411f382](https://github.com/muxinc/elements/commit/411f382ca9d701fae30bdf12d65b7c314f3e9618)), closes [#836](https://github.com/muxinc/elements/issues/836)
+* upgrade media-chrome + turbo ([#838](https://github.com/muxinc/elements/issues/838)) ([a7c4948](https://github.com/muxinc/elements/commit/a7c49488ccbc3c1a9d087775d8ee83298acd1e91))
+* upgrade media-chrome v2 & castable-video v1 ([#840](https://github.com/muxinc/elements/issues/840)) ([7752977](https://github.com/muxinc/elements/commit/775297721575680994ca1b96576080ac1f14c47d))
+
+
+
+
+
+# [0.17.0](https://github.com/muxinc/elements/compare/@mux/mux-video@0.16.5...@mux/mux-video@0.17.0) (2023-10-24)
+
+
+### Features
+
+* Manifest manipulation and other media stream query param props. ([954b2c8](https://github.com/muxinc/elements/commit/954b2c80d7df88bb4585c46a15dd1185d56dcf9a))
+
+
+
+
+
 ## [0.16.5](https://github.com/muxinc/elements/compare/@mux/mux-video@0.16.4...@mux/mux-video@0.16.5) (2023-10-03)
 
 **Note:** Version bump only for package @mux/mux-video

@@ -15,6 +15,8 @@ import {
   addCuePoints,
   getCuePoints,
   getActiveCuePoint,
+  addChapters,
+  getActiveChapter,
   getStartDate,
   getCurrentPdt,
   getStreamType,
@@ -22,59 +24,43 @@ import {
   getLiveEdgeStart,
   getSeekable,
   getEnded,
+  getChapters,
+  toPlaybackIdFromSrc,
+  // isMuxVideoSrc,
 } from '@mux/playback-core';
 import type {
   PlaybackCore,
   PlaybackEngine,
   Autoplay,
-  MediaTracks,
   ExtensionMimeTypeMap,
   ValueOf,
+  MaxResolutionValue,
+  MinResolutionValue,
+  RenditionOrderValue,
 } from '@mux/playback-core';
 import { getPlayerVersion } from './env';
 // this must be imported after playback-core for the polyfill to be included
-import 'castable-video';
-import { CustomMediaMixin, Events as VideoEvents } from 'custom-media-element';
+import { CustomVideoElement, Events as VideoEvents } from 'custom-media-element';
+import { CastableMediaMixin } from 'castable-video/castable-mixin.js';
 import { MediaTracksMixin } from 'media-tracks';
+import type { HlsConfig } from 'hls.js';
 
 // Must mutate so the added events are available in custom-media-element.
 VideoEvents.push('castchange', 'entercast', 'leavecast');
 
-const CustomVideoElement = MediaTracksMixin(
-  CustomMediaMixin(globalThis.HTMLElement, {
-    tag: 'video',
-    is: 'castable-video',
-  })
-);
-
-/** @TODO make the relationship between name+value smarter and more deriveable (CJP) */
-type AttributeNames = {
-  BEACON_COLLECTION_DOMAIN: 'beacon-collection-domain';
-  CUSTOM_DOMAIN: 'custom-domain';
-  DEBUG: 'debug';
-  DISABLE_COOKIES: 'disable-cookies';
-  ENV_KEY: 'env-key';
-  MAX_RESOLUTION: 'max-resolution';
-  METADATA_URL: 'metadata-url';
-  PLAYBACK_ID: 'playback-id';
-  PLAYER_SOFTWARE_NAME: 'player-software-name';
-  PLAYER_SOFTWARE_VERSION: 'player-software-version';
-  PREFER_CMCD: 'prefer-cmcd';
-  PREFER_PLAYBACK: 'prefer-playback';
-  START_TIME: 'start-time';
-  STREAM_TYPE: 'stream-type';
-  TARGET_LIVE_WINDOW: 'target-live-window';
-  LIVE_EDGE_OFFSET: 'live-edge-offset';
-  TYPE: 'type';
-};
-
-export const Attributes: AttributeNames = {
+export const Attributes = {
   BEACON_COLLECTION_DOMAIN: 'beacon-collection-domain',
   CUSTOM_DOMAIN: 'custom-domain',
   DEBUG: 'debug',
+  DISABLE_TRACKING: 'disable-tracking',
   DISABLE_COOKIES: 'disable-cookies',
+  DRM_TOKEN: 'drm-token',
   ENV_KEY: 'env-key',
   MAX_RESOLUTION: 'max-resolution',
+  MIN_RESOLUTION: 'min-resolution',
+  RENDITION_ORDER: 'rendition-order',
+  PROGRAM_START_TIME: 'program-start-time',
+  PROGRAM_END_TIME: 'program-end-time',
   METADATA_URL: 'metadata-url',
   PLAYBACK_ID: 'playback-id',
   PLAYER_SOFTWARE_NAME: 'player-software-name',
@@ -86,14 +72,14 @@ export const Attributes: AttributeNames = {
   TARGET_LIVE_WINDOW: 'target-live-window',
   LIVE_EDGE_OFFSET: 'live-edge-offset',
   TYPE: 'type',
-};
+} as const;
 
 const AttributeNameValues = Object.values(Attributes);
 
 const playerSoftwareVersion = getPlayerVersion();
 const playerSoftwareName = 'mux-video';
 
-class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProps> {
+class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMediaProps> {
   static get observedAttributes() {
     return [...AttributeNameValues, ...(CustomVideoElement.observedAttributes ?? [])];
   }
@@ -102,6 +88,7 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
   #loadRequested?: Promise<void> | null;
   #playerInitTime: number;
   #metadata: Readonly<Metadata> = {};
+  #_hlsConfig?: Partial<HlsConfig>;
   #playerSoftwareVersion?: string;
   #playerSoftwareName?: string;
   #errorTranslator?: (errorEvent: any) => any;
@@ -247,11 +234,11 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
     }
   }
 
-  get debug(): boolean {
+  get debug() {
     return this.getAttribute(Attributes.DEBUG) != null;
   }
 
-  set debug(val: boolean) {
+  set debug(val) {
     // dont' cause an infinite loop
     if (val === this.debug) return;
 
@@ -262,11 +249,22 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
     }
   }
 
-  get disableCookies(): boolean {
+  get disableTracking() {
+    return this.hasAttribute(Attributes.DISABLE_TRACKING);
+  }
+
+  set disableTracking(val) {
+    // dont' cause an infinite loop
+    if (val === this.disableTracking) return;
+
+    this.toggleAttribute(Attributes.DISABLE_TRACKING, !!val);
+  }
+
+  get disableCookies() {
     return this.hasAttribute(Attributes.DISABLE_COOKIES);
   }
 
-  set disableCookies(val: boolean) {
+  set disableCookies(val) {
     // dont' cause an infinite loop
     if (val === this.disableCookies) return;
 
@@ -296,7 +294,11 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
   }
 
   get playbackId(): string | undefined {
-    return this.getAttribute(Attributes.PLAYBACK_ID) ?? undefined;
+    if (this.hasAttribute(Attributes.PLAYBACK_ID)) {
+      return this.getAttribute(Attributes.PLAYBACK_ID) as string;
+    }
+
+    return toPlaybackIdFromSrc(this.src) ?? undefined;
   }
 
   set playbackId(val: string | undefined) {
@@ -311,16 +313,74 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
   }
 
   get maxResolution() {
-    return this.getAttribute(Attributes.MAX_RESOLUTION) ?? undefined;
+    return (this.getAttribute(Attributes.MAX_RESOLUTION) as MaxResolutionValue) ?? undefined;
   }
 
-  set maxResolution(val: string | undefined) {
+  set maxResolution(val: MaxResolutionValue | undefined) {
     if (val === this.maxResolution) return;
 
     if (val) {
       this.setAttribute(Attributes.MAX_RESOLUTION, val);
     } else {
       this.removeAttribute(Attributes.MAX_RESOLUTION);
+    }
+  }
+
+  get minResolution() {
+    return (this.getAttribute(Attributes.MIN_RESOLUTION) as MinResolutionValue) ?? undefined;
+  }
+
+  set minResolution(val: MinResolutionValue | undefined) {
+    if (val === this.minResolution) return;
+
+    if (val) {
+      this.setAttribute(Attributes.MIN_RESOLUTION, val);
+    } else {
+      this.removeAttribute(Attributes.MIN_RESOLUTION);
+    }
+  }
+
+  get renditionOrder() {
+    return (this.getAttribute(Attributes.RENDITION_ORDER) as RenditionOrderValue) ?? undefined;
+  }
+
+  set renditionOrder(val: RenditionOrderValue | undefined) {
+    if (val === this.renditionOrder) return;
+
+    if (val) {
+      this.setAttribute(Attributes.RENDITION_ORDER, val);
+    } else {
+      this.removeAttribute(Attributes.RENDITION_ORDER);
+    }
+  }
+
+  get programStartTime() {
+    const val = this.getAttribute(Attributes.PROGRAM_START_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set programStartTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.PROGRAM_START_TIME);
+    } else {
+      this.setAttribute(Attributes.PROGRAM_START_TIME, `${val}`);
+    }
+  }
+
+  get programEndTime() {
+    const val = this.getAttribute(Attributes.PROGRAM_END_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set programEndTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.PROGRAM_END_TIME);
+    } else {
+      this.setAttribute(Attributes.PROGRAM_END_TIME, `${val}`);
     }
   }
 
@@ -336,6 +396,21 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
       this.setAttribute(Attributes.CUSTOM_DOMAIN, val);
     } else {
       this.removeAttribute(Attributes.CUSTOM_DOMAIN);
+    }
+  }
+
+  get drmToken() {
+    return this.getAttribute(Attributes.DRM_TOKEN) ?? undefined;
+  }
+
+  set drmToken(val: string | undefined) {
+    // dont' cause an infinite loop
+    if (val === this.drmToken) return;
+
+    if (val) {
+      this.setAttribute(Attributes.DRM_TOKEN, val);
+    } else {
+      this.removeAttribute(Attributes.DRM_TOKEN);
     }
   }
 
@@ -452,6 +527,18 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
     return getCuePoints(this.nativeEl);
   }
 
+  async addChapters(chapters: { startTime: number; endTime: number; value: string }[]) {
+    return addChapters(this.nativeEl, chapters);
+  }
+
+  get activeChapter() {
+    return getActiveChapter(this.nativeEl);
+  }
+
+  get chapters() {
+    return getChapters(this.nativeEl);
+  }
+
   getStartDate() {
     return getStartDate(this.nativeEl, this._hls);
   }
@@ -481,13 +568,16 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
       .filter((attrName) => {
         return attrName.startsWith('metadata-') && !([Attributes.METADATA_URL] as string[]).includes(attrName);
       })
-      .reduce((currAttrs, attrName) => {
-        const value = this.getAttribute(attrName);
-        if (value != null) {
-          currAttrs[attrName.replace(/^metadata-/, '').replace(/-/g, '_') as string] = value;
-        }
-        return currAttrs;
-      }, {} as { [key: string]: string });
+      .reduce(
+        (currAttrs, attrName) => {
+          const value = this.getAttribute(attrName);
+          if (value != null) {
+            currAttrs[attrName.replace(/^metadata-/, '').replace(/-/g, '_') as string] = value;
+          }
+          return currAttrs;
+        },
+        {} as { [key: string]: string }
+      );
 
     return {
       ...inferredMetadataAttrs,
@@ -502,6 +592,14 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
     }
   }
 
+  get _hlsConfig() {
+    return this.#_hlsConfig;
+  }
+
+  set _hlsConfig(val: Readonly<Partial<HlsConfig>> | undefined) {
+    this.#_hlsConfig = val;
+  }
+
   async #requestLoad() {
     if (this.#loadRequested) return;
     await (this.#loadRequested = Promise.resolve());
@@ -510,7 +608,7 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
   }
 
   load() {
-    this.#core = initialize(this as Partial<MuxMediaProps> & MediaTracks, this.nativeEl, this.#core);
+    this.#core = initialize(this as Partial<MuxMediaProps>, this.nativeEl, this.#core);
   }
 
   unload() {
@@ -559,10 +657,7 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
         this.#core?.setPreload(newValue as HTMLMediaElement['preload']);
         break;
       case Attributes.PLAYBACK_ID:
-        this.src = toMuxVideoURL(newValue ?? undefined, {
-          maxResolution: this.maxResolution,
-          domain: this.customDomain,
-        }) as string;
+        this.src = toMuxVideoURL(this) as string;
         break;
       case Attributes.DEBUG: {
         const debug = this.debug;
@@ -612,6 +707,50 @@ class MuxVideoElement extends CustomVideoElement implements Partial<MuxMediaProp
 
   disconnectedCallback(): void {
     this.unload();
+  }
+}
+
+// castable-video should be mixed in last so that it can override load().
+class MuxVideoElement extends CastableMediaMixin(MediaTracksMixin(MuxVideoBaseElement)) {
+  // NOTE: CastableMediaMixin needs to be a subclass of whatever implements the load() method
+  // (i.e. MuxVideoBaseElement), but we're overriding castCustomData to provide mux-specific
+  // values by default, so it needs to be defined here (i.e. in the composed subclass of
+  // CastableMediaMixin). (CJP)
+  #castCustomData: Record<string, any> | undefined;
+
+  get muxCastCustomData() {
+    return {
+      mux: {
+        // Mux Video values
+        playbackId: this.playbackId,
+        minResolution: this.minResolution,
+        maxResolution: this.maxResolution,
+        renditionOrder: this.renditionOrder,
+        customDomain: this.customDomain,
+        /** @TODO Add this.tokens to MuxVideoElement (CJP) */
+        tokens: {
+          drm: this.drmToken,
+        },
+        // Mux Data values
+        envKey: this.envKey,
+        metadata: this.metadata,
+        disableCookies: this.disableCookies,
+        disableTracking: this.disableTracking,
+        beaconCollectionDomain: this.beaconCollectionDomain,
+        // Playback values
+        startTime: this.startTime,
+        // Other values
+        preferCmcd: this.preferCmcd,
+      },
+    } as const;
+  }
+
+  get castCustomData() {
+    return this.#castCustomData ?? this.muxCastCustomData;
+  }
+
+  set castCustomData(val: Record<string, any> | undefined) {
+    this.#castCustomData = val;
   }
 }
 

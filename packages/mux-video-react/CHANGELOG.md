@@ -3,6 +3,132 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.3](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.11.2...@mux/mux-video-react@0.11.3) (2024-08-06)
+
+**Note:** Version bump only for package @mux/mux-video-react
+
+
+
+
+
+## [0.11.2](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.11.1...@mux/mux-video-react@0.11.2) (2024-08-02)
+
+
+### Bug Fixes
+
+* mark React 19 as peerdep ([#971](https://github.com/muxinc/elements/issues/971)) ([4f74ea0](https://github.com/muxinc/elements/commit/4f74ea0215407e5c9573d8dd4a91d2a855b864bb))
+
+
+
+
+
+## [0.11.1](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.11.0...@mux/mux-video-react@0.11.1) (2024-07-10)
+
+**Note:** Version bump only for package @mux/mux-video-react
+
+
+
+
+
+# [0.11.0](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.10.0...@mux/mux-video-react@0.11.0) (2024-05-28)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video, mux-video-react, mux-audio, mux-audio-react, playback-core:** pdt clipping ([#923](https://github.com/muxinc/elements/issues/923)) ([22e9b06](https://github.com/muxinc/elements/commit/22e9b06e2e0913a6c34ebea53f4bbeded969b5a4))
+
+
+
+
+
+# [0.10.0](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.9.0...@mux/mux-video-react@0.10.0) (2024-05-03)
+
+
+### Bug Fixes
+
+* passthrough props to native media els ([#912](https://github.com/muxinc/elements/issues/912)) ([88a63db](https://github.com/muxinc/elements/commit/88a63db7dadc9aa3e09402f7c1be79a278b97c06))
+
+
+### Features
+
+* **mux-player-react, mux-uploader-react, mux-audio-react, mux-video-react:** add client component directive ([#911](https://github.com/muxinc/elements/issues/911)) ([76aa003](https://github.com/muxinc/elements/commit/76aa003e9ad9488509650970b971edd3ed463592))
+
+
+
+
+
+# [0.9.0](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.8.5...@mux/mux-video-react@0.9.0) (2024-04-18)
+
+
+### Bug Fixes
+
+* upgrade media-chrome, upchunk, React types ([#904](https://github.com/muxinc/elements/issues/904)) ([1090ad6](https://github.com/muxinc/elements/commit/1090ad690261acd7ac1ab68b45801c46be1c2d0c))
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/muxinc/elements/issues/897)) ([fd91d94](https://github.com/muxinc/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+
+
+### Features
+
+* add `disable-tracking` attribute and prop ([#900](https://github.com/muxinc/elements/issues/900)) ([0f5966e](https://github.com/muxinc/elements/commit/0f5966ec6cdf3cacde017a4ddd9c388bea3168d7))
+
+
+
+
+
+## [0.8.5](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.8.4...@mux/mux-video-react@0.8.5) (2024-03-29)
+
+**Note:** Version bump only for package @mux/mux-video-react
+
+
+
+
+
+## [0.8.4](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.8.3...@mux/mux-video-react@0.8.4) (2024-03-20)
+
+**Note:** Version bump only for package @mux/mux-video-react
+
+
+
+
+
+## [0.8.3](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.8.2...@mux/mux-video-react@0.8.3) (2024-02-16)
+
+**Note:** Version bump only for package @mux/mux-video-react
+
+
+
+
+
+## [0.8.2](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.8.1...@mux/mux-video-react@0.8.2) (2024-01-02)
+
+**Note:** Version bump only for package @mux/mux-video-react
+
+
+
+
+
+## [0.8.1](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.8.0...@mux/mux-video-react@0.8.1) (2023-12-07)
+
+
+### Bug Fixes
+
+* Adding unofficial _hlsConfig to media elements and playback core. ([#833](https://github.com/muxinc/elements/issues/833)) ([b86f6e6](https://github.com/muxinc/elements/commit/b86f6e6eb2c116d1d676fbaecd46d77a0baa3416)), closes [#792](https://github.com/muxinc/elements/issues/792)
+* **mux-video-react:** Don't spread disableCookies to video to avoid warnings ([#749](https://github.com/muxinc/elements/issues/749)) ([06169be](https://github.com/muxinc/elements/commit/06169bef2c158a02e683839f1bebb8cb1e619c0c)), closes [#602](https://github.com/muxinc/elements/issues/602)
+
+
+
+
+
+# [0.8.0](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.7.21...@mux/mux-video-react@0.8.0) (2023-10-24)
+
+
+### Features
+
+* Manifest manipulation and other media stream query param props. ([954b2c8](https://github.com/muxinc/elements/commit/954b2c80d7df88bb4585c46a15dd1185d56dcf9a))
+
+
+
+
+
 ## [0.7.21](https://github.com/muxinc/elements/compare/@mux/mux-video-react@0.7.20...@mux/mux-video-react@0.7.21) (2023-10-03)
 
 **Note:** Version bump only for package @mux/mux-video-react

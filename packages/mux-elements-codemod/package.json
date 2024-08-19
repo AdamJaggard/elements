@@ -1,6 +1,6 @@
 {
   "name": "@mux/mux-elements-codemod",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "A codemod to transform @mux-elments scope imports into @mux scope imports",
   "bin": "./dist/index.mjs",
   "type": "module",
@@ -34,7 +34,7 @@
     "@typescript-eslint/eslint-plugin": "^5.48.0",
     "@typescript-eslint/parser": "^5.48.0",
     "downlevel-dts": "^0.11.0",
-    "esbuild": "^0.15.7",
+    "esbuild": "^0.19.8",
     "eslint": "^8.24.0",
     "npm-run-all": "^4.1.5",
     "replace": "^1.2.1",

@@ -18,33 +18,23 @@ import type { PlaybackCore, PlaybackEngine, ExtensionMimeTypeMap } from '@mux/pl
 import { getPlayerVersion } from './env';
 // this must be imported after playback-core for the polyfill to be included
 import { CustomAudioElement, Events as AudioEvents } from 'custom-media-element';
+import type { HlsConfig } from 'hls.js';
 
-/** @TODO make the relationship between name+value smarter and more deriveable (CJP) */
-type AttributeNames = {
-  ENV_KEY: 'env-key';
-  DEBUG: 'debug';
-  METADATA_URL: 'metadata-url';
-  BEACON_COLLECTION_DOMAIN: 'beacon-collection-domain';
-  DISABLE_COOKIES: 'disable-cookies';
-  PLAYBACK_ID: 'playback-id';
-  PREFER_PLAYBACK: 'prefer-playback';
-  TYPE: 'type';
-  STREAM_TYPE: 'stream-type';
-  START_TIME: 'start-time';
-};
-
-const Attributes: AttributeNames = {
+export const Attributes = {
   ENV_KEY: 'env-key',
   DEBUG: 'debug',
   PLAYBACK_ID: 'playback-id',
+  PROGRAM_START_TIME: 'program-start-time',
+  PROGRAM_END_TIME: 'program-end-time',
   METADATA_URL: 'metadata-url',
   PREFER_PLAYBACK: 'prefer-playback',
   BEACON_COLLECTION_DOMAIN: 'beacon-collection-domain',
+  DISABLE_TRACKING: 'disable-tracking',
   DISABLE_COOKIES: 'disable-cookies',
   TYPE: 'type',
   STREAM_TYPE: 'stream-type',
   START_TIME: 'start-time',
-};
+} as const;
 
 const AttributeNameValues = Object.values(Attributes);
 
@@ -60,6 +50,7 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
   #loadRequested?: Promise<void> | null;
   #playerInitTime: number;
   #metadata: Readonly<Metadata> = {};
+  #_hlsConfig?: Partial<HlsConfig>;
 
   constructor() {
     super();
@@ -125,11 +116,11 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
     }
   }
 
-  get debug(): boolean {
+  get debug() {
     return this.getAttribute(Attributes.DEBUG) != null;
   }
 
-  set debug(val: boolean) {
+  set debug(val) {
     // dont' cause an infinite loop
     if (val === this.debug) return;
 
@@ -140,11 +131,22 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
     }
   }
 
-  get disableCookies(): boolean {
+  get disableTracking() {
+    return this.hasAttribute(Attributes.DISABLE_TRACKING);
+  }
+
+  set disableTracking(val) {
+    // dont' cause an infinite loop
+    if (val === this.disableTracking) return;
+
+    this.toggleAttribute(Attributes.DISABLE_TRACKING, !!val);
+  }
+
+  get disableCookies() {
     return this.hasAttribute(Attributes.DISABLE_COOKIES);
   }
 
-  set disableCookies(val: boolean) {
+  set disableCookies(val) {
     // dont' cause an infinite loop
     if (val === this.disableCookies) return;
 
@@ -185,6 +187,36 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
       this.setAttribute(Attributes.PLAYBACK_ID, val);
     } else {
       this.removeAttribute(Attributes.PLAYBACK_ID);
+    }
+  }
+
+  get programStartTime() {
+    const val = this.getAttribute(Attributes.PROGRAM_START_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set programStartTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.PROGRAM_START_TIME);
+    } else {
+      this.setAttribute(Attributes.PROGRAM_START_TIME, `${val}`);
+    }
+  }
+
+  get programEndTime() {
+    const val = this.getAttribute(Attributes.PROGRAM_END_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set programEndTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.PROGRAM_END_TIME);
+    } else {
+      this.setAttribute(Attributes.PROGRAM_END_TIME, `${val}`);
     }
   }
 
@@ -269,13 +301,16 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
       .filter((attrName) => {
         return attrName.startsWith('metadata-') && !([Attributes.METADATA_URL] as string[]).includes(attrName);
       })
-      .reduce((currAttrs, attrName) => {
-        const value = this.getAttribute(attrName);
-        if (value != null) {
-          currAttrs[attrName.replace(/^metadata-/, '').replace(/-/g, '_') as string] = value;
-        }
-        return currAttrs;
-      }, {} as { [key: string]: string });
+      .reduce(
+        (currAttrs, attrName) => {
+          const value = this.getAttribute(attrName);
+          if (value != null) {
+            currAttrs[attrName.replace(/^metadata-/, '').replace(/-/g, '_') as string] = value;
+          }
+          return currAttrs;
+        },
+        {} as { [key: string]: string }
+      );
 
     return {
       ...inferredMetadataAttrs,
@@ -292,6 +327,14 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
       );
       this.mux.emit('hb', this.#metadata);
     }
+  }
+
+  get _hlsConfig() {
+    return this.#_hlsConfig;
+  }
+
+  set _hlsConfig(val: Readonly<Partial<HlsConfig>> | undefined) {
+    this.#_hlsConfig = val;
   }
 
   async #requestLoad() {
@@ -346,8 +389,7 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
         this.#core?.setPreload(newValue as HTMLMediaElement['preload']);
         break;
       case Attributes.PLAYBACK_ID:
-        /** @TODO Improv+Discuss - how should playback-id update wrt src attr changes (and vice versa) (CJP) */
-        this.src = toMuxVideoURL(newValue ?? undefined) as string;
+        this.src = toMuxVideoURL(this) as string;
         break;
       case Attributes.DEBUG: {
         const debug = this.debug;
