@@ -15,6 +15,64 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 
 
+## [0.16.0](https://github.com/AdamJaggard/elements/compare/@mux/mux-audio@0.15.4...@mux/mux-audio@0.16.0) (2025-03-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* Upgrade media chrome to 4.1.0 ([#978](https://github.com/AdamJaggard/elements/issues/978))
+
+### Features
+
+* add `disable-tracking` attribute and prop ([#900](https://github.com/AdamJaggard/elements/issues/900)) ([0f5966e](https://github.com/AdamJaggard/elements/commit/0f5966ec6cdf3cacde017a4ddd9c388bea3168d7))
+* add currentPdt getter and getStartDate() method ([#661](https://github.com/AdamJaggard/elements/issues/661)) ([530170b](https://github.com/AdamJaggard/elements/commit/530170b789d7734d2b70fde7d59abb1ebf8a582c))
+* allow video, audio and player elements to get any metadata-* attrs set ([#501](https://github.com/AdamJaggard/elements/issues/501)) ([8ee139d](https://github.com/AdamJaggard/elements/commit/8ee139d2bbd08e1e3c08d047f870c1dcf01dac7e))
+* Manifest manipulation and other media stream query param props. ([954b2c8](https://github.com/AdamJaggard/elements/commit/954b2c80d7df88bb4585c46a15dd1185d56dcf9a))
+* **mux-audio:** Add disable cookies attr and prop. ([ef453ed](https://github.com/AdamJaggard/elements/commit/ef453edf9cb9696150ae89f995a6af8472161153))
+* **mux-player-react:** Force minor version bump via conventional commits. ([201bfcd](https://github.com/AdamJaggard/elements/commit/201bfcd2a4137b2c409d1ce5fb3b32576a99ba31))
+* **mux-player, mux-player-react, mux-video, mux-video-react, mux-audio, mux-audio-react, playback-core:** pdt clipping ([#923](https://github.com/AdamJaggard/elements/issues/923)) ([22e9b06](https://github.com/AdamJaggard/elements/commit/22e9b06e2e0913a6c34ebea53f4bbeded969b5a4))
+* **playback-core, mux-video, mux-audio, mux-player:** Upg hls.js ([#902](https://github.com/AdamJaggard/elements/issues/902)) ([a6a76b6](https://github.com/AdamJaggard/elements/commit/a6a76b69e03867cc11c348d2b48e0160ea295309))
+* **playback-core, mux-video, mux-audio, mux-video-react, mux-audio-react, mux-player, mux-player-react:** Add asset start and end time props and attrs. ([#1002](https://github.com/AdamJaggard/elements/issues/1002)) ([99a0726](https://github.com/AdamJaggard/elements/commit/99a07268cfa78ee026a0ee7b7f9af90fcf3feb4c))
+* **playback-core:** error handling rearchitecture (including more granular and DRM error cases)  ([4d0b670](https://github.com/AdamJaggard/elements/commit/4d0b670eacb57f44891fab781941dab6e97e06fe))
+* Set default player init time for all elements for greater accuracy. Expose attr+prop for externally defined player init time. ([#1034](https://github.com/AdamJaggard/elements/issues/1034)) ([61f10d3](https://github.com/AdamJaggard/elements/commit/61f10d3933e487e44795a8e42e36721ae00873d2))
+
+
+### Bug Fixes
+
+* add async effect for loading media ([#492](https://github.com/AdamJaggard/elements/issues/492)) ([d2b250a](https://github.com/AdamJaggard/elements/commit/d2b250a2d86e4e6a4c17fc34196e6468c4fedf1f))
+* Adding unofficial _hlsConfig to media elements and playback core. ([#833](https://github.com/AdamJaggard/elements/issues/833)) ([b86f6e6](https://github.com/AdamJaggard/elements/commit/b86f6e6eb2c116d1d676fbaecd46d77a0baa3416)), closes [#792](https://github.com/AdamJaggard/elements/issues/792)
+* move package exports default condition to be last ([#1013](https://github.com/AdamJaggard/elements/issues/1013)) ([192aa79](https://github.com/AdamJaggard/elements/commit/192aa79903d3c01fc9ce9fda3d8a35be3c56fc83))
+* **mux-video, mux-video-react, mux-audio, mux-audio-react, mux-player, mux-player-react:** Expose element name and version via exports and statics for web components. ([#1017](https://github.com/AdamJaggard/elements/issues/1017)) ([27b6858](https://github.com/AdamJaggard/elements/commit/27b6858de2190e2caf2b1315ebbc469c01bbd25f))
+* **mux-video,mux-audio:** reload core on DOM connect ([#765](https://github.com/AdamJaggard/elements/issues/765)) ([3b61394](https://github.com/AdamJaggard/elements/commit/3b61394e4a60ded6c2a7f30b85c281f5ef5cea03))
+* **playback-core, mux-video:** Handle native playback edge cases wher… ([#705](https://github.com/AdamJaggard/elements/issues/705)) ([16f8941](https://github.com/AdamJaggard/elements/commit/16f8941799a5186f28205a70105b26764f39b295))
+* **playback-core:** Typescript + min acrobatics to make svelte and others happy ([fdf34bb](https://github.com/AdamJaggard/elements/commit/fdf34bb8fd409f0c2b5945802251ed2e6ffafd7e))
+* **playback-core:** Update hls.js version to fix multi-DRM playready bug. ([#1060](https://github.com/AdamJaggard/elements/issues/1060)) ([380ded2](https://github.com/AdamJaggard/elements/commit/380ded2ce544b9c9ae6a1d108b9d48cd4feb58fd))
+* Reverting packages type (defaults to cjs) for accuracy per node … ([#745](https://github.com/AdamJaggard/elements/issues/745)) ([9e7a171](https://github.com/AdamJaggard/elements/commit/9e7a17113e14b711c8da9b1bdafe65ee86454b3b))
+* tracks updating after load new playback id ([#1021](https://github.com/AdamJaggard/elements/issues/1021)) ([b762184](https://github.com/AdamJaggard/elements/commit/b762184001dfb373e1715bb3283e593aa2bf08eb))
+* update typedefs, disable skipLibChecks in tsconfig ([#601](https://github.com/AdamJaggard/elements/issues/601)) ([1664aec](https://github.com/AdamJaggard/elements/commit/1664aec20e4cf4a59779848b298d4504eef24080))
+* upgrade custom-media-element ([#858](https://github.com/AdamJaggard/elements/issues/858)) ([eb39e54](https://github.com/AdamJaggard/elements/commit/eb39e546073c9c78b385809b27d095f36350737f))
+* upgrade dependencies (castable-video, ...) ([#1087](https://github.com/AdamJaggard/elements/issues/1087)) ([dc84f07](https://github.com/AdamJaggard/elements/commit/dc84f07109565dc7ee29d691a0fc941c6854f762))
+* upgrade deps custom-media-element, hls.js, mux-embed, ... ([#1052](https://github.com/AdamJaggard/elements/issues/1052)) ([dd4264d](https://github.com/AdamJaggard/elements/commit/dd4264d51671989a29c037e912a128056acea5f8))
+* upgrade external deps, allow patches uniform ([#850](https://github.com/AdamJaggard/elements/issues/850)) ([f72acf4](https://github.com/AdamJaggard/elements/commit/f72acf49199497cb45c186bd4b2bc2a67e5431c0))
+* upgrade hls.js, custom-media-element, etc. ([#931](https://github.com/AdamJaggard/elements/issues/931)) ([efb5c51](https://github.com/AdamJaggard/elements/commit/efb5c514f65f017fdeea50682e1cdb15229cfd92)), closes [#927](https://github.com/AdamJaggard/elements/issues/927)
+* upgrade MC, fix theme flicker ([#1067](https://github.com/AdamJaggard/elements/issues/1067)) ([b2fad06](https://github.com/AdamJaggard/elements/commit/b2fad068300420d12ad25f26f24f8189f7ba6907))
+* upgrade media-chrome + turbo ([#838](https://github.com/AdamJaggard/elements/issues/838)) ([a7c4948](https://github.com/AdamJaggard/elements/commit/a7c49488ccbc3c1a9d087775d8ee83298acd1e91))
+* upgrade mux-embed v5.2.0 & media-chrome v3.2.0 ([#897](https://github.com/AdamJaggard/elements/issues/897)) ([fd91d94](https://github.com/AdamJaggard/elements/commit/fd91d946ee2f8e58e05551fcb247422de6fbb761))
+* upgrade to hls.js 1.4.1 ([#685](https://github.com/AdamJaggard/elements/issues/685)) ([15ca4ac](https://github.com/AdamJaggard/elements/commit/15ca4acc3b5093a409baa938429d9afaa30c80bd))
+* use custom-media-element pkg ([#697](https://github.com/AdamJaggard/elements/issues/697)) ([71c3341](https://github.com/AdamJaggard/elements/commit/71c334157cbb16f88d57b020425534e9dde2b4ca))
+
+
+### Miscellaneous Chores
+
+* Upgrade media chrome to 4.1.0 ([#978](https://github.com/AdamJaggard/elements/issues/978)) ([ff78173](https://github.com/AdamJaggard/elements/commit/ff781732c86719de2ea7e54987c75178ac42bbd6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/playback-core bumped from 0.28.4 to 0.29.0
+
 ## [0.15.4](https://github.com/muxinc/elements/compare/@mux/mux-audio@0.15.3...@mux/mux-audio@0.15.4) (2025-03-21)
 
 
