@@ -1,5 +1,4 @@
 import { document } from './polyfills';
-// @ts-ignore
 import { TemplateInstance, ChildNodePart, AttrPart, Part } from 'media-chrome/dist/media-theme-element.js';
 
 // NOTE: These are either direct ports or significantly based off of github's jtml template part processing logic. For more, see: https://github.com/github/jtml
@@ -7,7 +6,10 @@ import { TemplateInstance, ChildNodePart, AttrPart, Part } from 'media-chrome/di
 const eventListeners = new WeakMap<Element, Map<string, EventHandler>>();
 class EventHandler {
   handleEvent!: EventListener;
-  constructor(private element: Element, private type: string) {
+  constructor(
+    private element: Element,
+    private type: string
+  ) {
     this.element.addEventListener(this.type, this);
     const elementMap = eventListeners.get(this.element);
     if (elementMap) {
@@ -113,6 +115,7 @@ export function processBooleanNode(part: Part, value: unknown): boolean {
 }
 
 export function processPart(part: Part, value: unknown): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   processElementAttribute(part, value) ||
     processBooleanAttribute(part, value) ||
     processEvent(part, value) ||
@@ -173,7 +176,7 @@ export class TemplateResult {
 }
 
 const defaultProcessor = {
-  processCallback(instance: any, parts: any, state: any) {
+  processCallback(_instance: any, parts: any, state: any) {
     if (!state) return;
     for (const [expression, part] of parts) {
       if (expression in state) {

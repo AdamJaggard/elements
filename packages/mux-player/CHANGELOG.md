@@ -3,6 +3,158 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.1.0](https://github.com/muxinc/elements/compare/@mux/mux-player@3.0.0...@mux/mux-player@3.1.0) (2024-10-24)
+
+
+### Bug Fixes
+
+* menu CSS vars to hide menu button ([#999](https://github.com/muxinc/elements/issues/999)) ([4375d6f](https://github.com/muxinc/elements/commit/4375d6f0cb3c56eaee291521ad14c8eb5feb5d59))
+* upgrade Media Chrome v4.2.1 ([#1001](https://github.com/muxinc/elements/issues/1001)) ([46e38b5](https://github.com/muxinc/elements/commit/46e38b5504ce2738c9b896e7424e3cb506e62fdf))
+
+
+### Features
+
+* **playback-core, mux-video, mux-audio, mux-video-react, mux-audio-react, mux-player, mux-player-react:** Add asset start and end time props and attrs. ([#1002](https://github.com/muxinc/elements/issues/1002)) ([99a0726](https://github.com/muxinc/elements/commit/99a07268cfa78ee026a0ee7b7f9af90fcf3feb4c))
+* **playback-core:** error handling rearchitecture (including more granular and DRM error cases)  ([4d0b670](https://github.com/muxinc/elements/commit/4d0b670eacb57f44891fab781941dab6e97e06fe))
+
+
+
+
+
+# [3.0.0](https://github.com/muxinc/elements/compare/@mux/mux-player@2.9.1...@mux/mux-player@3.0.0) (2024-09-20)
+
+
+### Bug Fixes
+
+* chapters and cuepoints interface doesnt reflect internal types ([#977](https://github.com/muxinc/elements/issues/977)) ([e3eadec](https://github.com/muxinc/elements/commit/e3eadec050160ed44f01b91b4a49e84cce9188fc)), closes [#947](https://github.com/muxinc/elements/issues/947)
+* **mux-player, mux-player-react:** Remove seek buttons from mobile pre-playback UI ([#982](https://github.com/muxinc/elements/issues/982)) ([840a0be](https://github.com/muxinc/elements/commit/840a0be0b8b9feccee3cd0cb69c7156f81b1b8cc))
+* **mux-player:** add buttons to mobile live audio view ([#985](https://github.com/muxinc/elements/issues/985)) ([3437ced](https://github.com/muxinc/elements/commit/3437ced3fd01c7078cd32ee585fd69378aec0620))
+* upgrade media-chrome ([#990](https://github.com/muxinc/elements/issues/990)) ([e6e5598](https://github.com/muxinc/elements/commit/e6e559870e44ada3953dc7c5caef06d1986655ca))
+
+
+* chore(mux-player, mux-player-react)!: breaking change take 2 (#994) ([668403a](https://github.com/muxinc/elements/commit/668403adf97aae14e3acba667e42965f03d9ec97)), closes [#994](https://github.com/muxinc/elements/issues/994)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video:** cast custom data ([2722b6e](https://github.com/muxinc/elements/commit/2722b6ea6c5497c0bd0a28fd1732bd0b9c2474b6))
+
+
+### BREAKING CHANGES
+
+* Retrospective breaking change for tooltips pr
+
+
+
+
+
+## [3.3.1](https://github.com/muxinc/elements/compare/@mux/mux-player@3.3.0...@mux/mux-player@3.3.1) (2025-03-21)
+
+
+### Bug Fixes
+
+* bump media-chrome from 4.7.1 to 4.8.0 in /packages/mux-player in the prod-dependencies group across 1 directory ([#1084](https://github.com/muxinc/elements/issues/1084)) ([d2eccb5](https://github.com/muxinc/elements/commit/d2eccb5e3437da360873c84258f2e9624f1d2993))
+* **deps:** bump media-chrome from 4.5.0 to 4.7.1 ([#1079](https://github.com/muxinc/elements/issues/1079)) ([9609d01](https://github.com/muxinc/elements/commit/9609d0184becf9c067ccd5a77c61919e61decf04))
+* upgrade dependencies (castable-video, ...) ([#1087](https://github.com/muxinc/elements/issues/1087)) ([dc84f07](https://github.com/muxinc/elements/commit/dc84f07109565dc7ee29d691a0fc941c6854f762))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.24.3 to 0.24.4
+    * @mux/playback-core bumped from 0.28.3 to 0.28.4
+
+## [3.3.0](https://github.com/muxinc/elements/compare/@mux/mux-player@3.2.4...@mux/mux-player@3.3.0) (2025-02-13)
+
+
+### Features
+
+* implement Mux badge ([#988](https://github.com/muxinc/elements/issues/988)) ([2343df8](https://github.com/muxinc/elements/commit/2343df80fddcbf05485ed9d4ab27f1bb0fac04d0))
+
+
+### Bug Fixes
+
+* add missing menu part ([#1066](https://github.com/muxinc/elements/issues/1066)) ([f5c6d90](https://github.com/muxinc/elements/commit/f5c6d90999222a8eac7c62db60b097361a7effd0)), closes [#1065](https://github.com/muxinc/elements/issues/1065)
+* Mux-player imports ([#1056](https://github.com/muxinc/elements/issues/1056)) ([9b7ec1b](https://github.com/muxinc/elements/commit/9b7ec1b8b92a49f74ba361db90ddfa0a526c44d0))
+* **playback-core:** Update hls.js version to fix multi-DRM playready bug. ([#1060](https://github.com/muxinc/elements/issues/1060)) ([380ded2](https://github.com/muxinc/elements/commit/380ded2ce544b9c9ae6a1d108b9d48cd4feb58fd))
+* upgrade MC, fix theme flicker ([#1067](https://github.com/muxinc/elements/issues/1067)) ([b2fad06](https://github.com/muxinc/elements/commit/b2fad068300420d12ad25f26f24f8189f7ba6907))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.24.2 to 0.24.3
+    * @mux/playback-core bumped from 0.28.2 to 0.28.3
+
+## [3.2.4](https://github.com/muxinc/elements/compare/@mux/mux-player@3.2.3...@mux/mux-player@3.2.4) (2024-12-20)
+
+
+### Bug Fixes
+
+* upgrade deps custom-media-element, hls.js, mux-embed, ... ([#1052](https://github.com/muxinc/elements/issues/1052)) ([dd4264d](https://github.com/muxinc/elements/commit/dd4264d51671989a29c037e912a128056acea5f8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.24.1 to 0.24.2
+    * @mux/playback-core bumped from 0.28.1 to 0.28.2
+
+## [3.2.3](https://github.com/muxinc/elements/compare/@mux/mux-player@3.2.2...@mux/mux-player@3.2.3) (2024-12-19)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.24.0 to 0.24.1
+
+## [3.2.2](https://github.com/muxinc/elements/compare/@mux/mux-player@3.2.1...@mux/mux-player@3.2.2) (2024-12-19)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.23.1 to 0.24.0
+
+## [3.2.1](https://github.com/muxinc/elements/compare/@mux/mux-player@3.2.0...@mux/mux-player@3.2.1) (2024-12-17)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.23.0 to 0.23.1
+    * @mux/playback-core bumped from 0.28.0 to 0.28.1
+
+## [3.2.0](https://github.com/muxinc/elements/compare/@mux/mux-player@3.1.0...@mux/mux-player@3.2.0) (2024-12-12)
+
+
+### Features
+
+* Set default player init time for all elements for greater accuracy. Expose attr+prop for externally defined player init time. ([#1034](https://github.com/muxinc/elements/issues/1034)) ([61f10d3](https://github.com/muxinc/elements/commit/61f10d3933e487e44795a8e42e36721ae00873d2))
+* use MC media-error-dialog ([#1014](https://github.com/muxinc/elements/issues/1014)) ([2fbb2c1](https://github.com/muxinc/elements/commit/2fbb2c157aa694ed82fc2b81b989cca6c0f790af))
+
+
+### Bug Fixes
+
+* move package exports default condition to be last ([#1013](https://github.com/muxinc/elements/issues/1013)) ([192aa79](https://github.com/muxinc/elements/commit/192aa79903d3c01fc9ce9fda3d8a35be3c56fc83))
+* Mux-player childList observer behavior ([#1041](https://github.com/muxinc/elements/issues/1041)) ([d34903f](https://github.com/muxinc/elements/commit/d34903f97b35545093484ffc2cc4713825658337))
+* **mux-video, mux-video-react, mux-audio, mux-audio-react, mux-player, mux-player-react:** Expose element name and version via exports and statics for web components. ([#1017](https://github.com/muxinc/elements/issues/1017)) ([27b6858](https://github.com/muxinc/elements/commit/27b6858de2190e2caf2b1315ebbc469c01bbd25f))
+* upgrade player.style 0.1.0 ([#1032](https://github.com/muxinc/elements/issues/1032)) ([ef71319](https://github.com/muxinc/elements/commit/ef713192980e5ce687f0028a63cc081b5a777632))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-video bumped from 0.22.0 to 0.23.0
+    * @mux/playback-core bumped from 0.27.0 to 0.28.0
+
 ## [2.9.1](https://github.com/muxinc/elements/compare/@mux/mux-player@2.9.0...@mux/mux-player@2.9.1) (2024-08-06)
 
 

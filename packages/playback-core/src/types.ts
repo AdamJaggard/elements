@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/triple-slash-reference: "off" */
-/// <reference path="../../../node_modules/mux-embed/dist/types/mux-embed.d.ts" />
+/// <reference path="../../../node_modules/mux-embed/dist/types/mux-embed.d.ts" preserve="true" />
 import type { Options } from 'mux-embed';
 import type { MediaError } from './errors';
 import type { HlsConfig } from 'hls.js';
@@ -11,7 +11,7 @@ type Maybe<T> = T | null | undefined;
 const isNil = (x: unknown): x is null | undefined => x == undefined;
 
 // Type Guard to determine if a given key is actually a key of some object of type T
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const isKeyOf = <T extends {} = any>(k: KeyTypes, o: Maybe<T>): k is keyof T => {
   if (isNil(o)) return false;
   return k in o;
@@ -153,6 +153,13 @@ export type MaxResolutionValue = ValueOf<typeof MaxResolution>;
 export type MinResolutionValue = ValueOf<typeof MinResolution>;
 export type RenditionOrderValue = ValueOf<typeof RenditionOrder>;
 
+export type Tokens = {
+  playback?: string;
+  drm?: string;
+  thumbnail?: string;
+  storyboard?: string;
+};
+
 export type MuxMediaPropTypes = {
   _hlsConfig?: Partial<HlsConfig>;
   autoPlay?: Autoplay;
@@ -163,6 +170,7 @@ export type MuxMediaPropTypes = {
   disableCookies: Options['disableCookies'];
   disableTracking: boolean;
   drmToken?: string;
+  playbackToken?: string;
   envKey: MetaData['env_key'];
   error?: HTMLMediaElement['error'] | MediaError;
   errorTranslator: Options['errorTranslator'];
@@ -176,12 +184,15 @@ export type MuxMediaPropTypes = {
   preferPlayback: ValueOf<PlaybackTypes> | undefined;
   programStartTime: number;
   programEndTime: number;
+  assetStartTime: number;
+  assetEndTime: number;
   renditionOrder: RenditionOrderValue;
   startTime: Hls['config']['startPosition'];
   streamType: ValueOf<StreamTypes>;
   targetLiveWindow: number;
-  tokens: Partial<{ drm: string; playback: string; storyboard: string; thumbnail: string }>;
+  tokens: Tokens;
   type: MediaTypes;
+  extraSourceParams: Record<string, any>;
 };
 
 export type HTMLMediaElementProps = Partial<Pick<HTMLMediaElement, 'src' | 'preload' | 'error' | 'seekable'>>;

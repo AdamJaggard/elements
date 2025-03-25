@@ -3,31 +3,42 @@ import {
   initialize,
   teardown,
   generatePlayerInitTime,
-  MuxMediaProps,
-  StreamTypes,
   PlaybackTypes,
-  ValueOf,
   toMuxVideoURL,
-  Metadata,
   MediaError,
   getStartDate,
   getCurrentPdt,
   getEnded,
+  toPlaybackIdParts,
 } from '@mux/playback-core';
-import type { PlaybackCore, PlaybackEngine, ExtensionMimeTypeMap } from '@mux/playback-core';
+import type {
+  ExtensionMimeTypeMap,
+  Metadata,
+  MuxMediaProps,
+  PlaybackCore,
+  PlaybackEngine,
+  StreamTypes,
+  Tokens,
+  ValueOf,
+} from '@mux/playback-core';
 import { getPlayerVersion } from './env';
 // this must be imported after playback-core for the polyfill to be included
 import { CustomAudioElement, Events as AudioEvents } from 'custom-media-element';
 import type { HlsConfig } from 'hls.js';
 
 export const Attributes = {
+  PLAYER_INIT_TIME: 'player-init-time',
   ENV_KEY: 'env-key',
   DEBUG: 'debug',
   PLAYBACK_ID: 'playback-id',
+  PLAYBACK_TOKEN: 'playback-token',
   PROGRAM_START_TIME: 'program-start-time',
   PROGRAM_END_TIME: 'program-end-time',
+  ASSET_START_TIME: 'asset-start-time',
+  ASSET_END_TIME: 'asset-end-time',
   METADATA_URL: 'metadata-url',
   PREFER_PLAYBACK: 'prefer-playback',
+  CUSTOM_DOMAIN: 'custom-domain',
   BEACON_COLLECTION_DOMAIN: 'beacon-collection-domain',
   DISABLE_TRACKING: 'disable-tracking',
   DISABLE_COOKIES: 'disable-cookies',
@@ -38,27 +49,48 @@ export const Attributes = {
 
 const AttributeNameValues = Object.values(Attributes);
 
-const playerSoftwareVersion = getPlayerVersion();
-const playerSoftwareName = 'mux-audio';
+export const playerSoftwareVersion = getPlayerVersion();
+export const playerSoftwareName = 'mux-audio';
 
 class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProps> {
+  static get NAME() {
+    return playerSoftwareName;
+  }
+
+  static get VERSION() {
+    return playerSoftwareVersion;
+  }
+
   static get observedAttributes() {
     return [...AttributeNameValues, ...(CustomAudioElement.observedAttributes ?? [])];
   }
 
   #core?: PlaybackCore;
   #loadRequested?: Promise<void> | null;
-  #playerInitTime: number;
+  #defaultPlayerInitTime: number;
   #metadata: Readonly<Metadata> = {};
+  #tokens: Tokens = {};
   #_hlsConfig?: Partial<HlsConfig>;
 
   constructor() {
     super();
-    this.#playerInitTime = generatePlayerInitTime();
+    this.#defaultPlayerInitTime = generatePlayerInitTime();
   }
 
   get playerInitTime() {
-    return this.#playerInitTime;
+    if (!this.hasAttribute(Attributes.PLAYER_INIT_TIME)) return this.#defaultPlayerInitTime;
+    return +(this.getAttribute(Attributes.PLAYER_INIT_TIME) as string) as number;
+  }
+
+  set playerInitTime(val) {
+    // don't cause an infinite loop and avoid change event dispatching
+    if (val == this.playerInitTime) return;
+
+    if (val == null) {
+      this.removeAttribute(Attributes.PLAYER_INIT_TIME);
+    } else {
+      this.setAttribute(Attributes.PLAYER_INIT_TIME, `${+val}`);
+    }
   }
 
   get playerSoftwareName() {
@@ -218,6 +250,93 @@ class MuxAudioElement extends CustomAudioElement implements Partial<MuxMediaProp
     } else {
       this.setAttribute(Attributes.PROGRAM_END_TIME, `${val}`);
     }
+  }
+
+  get assetStartTime() {
+    const val = this.getAttribute(Attributes.ASSET_START_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set assetStartTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.ASSET_START_TIME);
+    } else {
+      this.setAttribute(Attributes.ASSET_START_TIME, `${val}`);
+    }
+  }
+
+  get assetEndTime() {
+    const val = this.getAttribute(Attributes.ASSET_END_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set assetEndTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.ASSET_END_TIME);
+    } else {
+      this.setAttribute(Attributes.ASSET_END_TIME, `${val}`);
+    }
+  }
+
+  get customDomain() {
+    return this.getAttribute(Attributes.CUSTOM_DOMAIN) ?? undefined;
+  }
+
+  set customDomain(val: string | undefined) {
+    // dont' cause an infinite loop
+    if (val === this.customDomain) return;
+
+    if (val) {
+      this.setAttribute(Attributes.CUSTOM_DOMAIN, val);
+    } else {
+      this.removeAttribute(Attributes.CUSTOM_DOMAIN);
+    }
+  }
+
+  /**
+   * Get the playback token for signing the src URL.
+   */
+  get playbackToken() {
+    if (this.hasAttribute(Attributes.PLAYBACK_TOKEN)) {
+      return this.getAttribute(Attributes.PLAYBACK_TOKEN) ?? undefined;
+    }
+    if (this.hasAttribute(Attributes.PLAYBACK_ID)) {
+      const [, queryParts] = toPlaybackIdParts(this.playbackId ?? '');
+      return new URLSearchParams(queryParts).get('token') ?? undefined;
+    }
+    if (this.src) {
+      return new URLSearchParams(this.src).get('token') ?? undefined;
+    }
+    return undefined;
+  }
+
+  /**
+   * Set the playback token for signing the src URL.
+   */
+  set playbackToken(val: string | undefined) {
+    if (val === this.playbackToken) return;
+
+    if (val) {
+      this.setAttribute(Attributes.PLAYBACK_TOKEN, val);
+    } else {
+      this.removeAttribute(Attributes.PLAYBACK_TOKEN);
+    }
+  }
+
+  get tokens() {
+    const playback = this.getAttribute(Attributes.PLAYBACK_TOKEN);
+    return {
+      ...this.#tokens,
+      ...(playback != null ? { playback } : {}),
+    };
+  }
+
+  set tokens(val) {
+    this.#tokens = val ?? {};
   }
 
   get ended() {
@@ -440,6 +559,13 @@ if (!globalThis.customElements.get('mux-audio')) {
   globalThis.MuxAudioElement = MuxAudioElement;
 }
 
-export { PlaybackEngine, PlaybackEngine as Hls, ExtensionMimeTypeMap as MimeTypes, MediaError, AudioEvents };
+export {
+  PlaybackEngine,
+  PlaybackEngine as Hls,
+  ExtensionMimeTypeMap as MimeTypes,
+  MediaError,
+  AudioEvents,
+  generatePlayerInitTime,
+};
 
 export default MuxAudioElement;

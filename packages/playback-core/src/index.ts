@@ -1,9 +1,9 @@
-/* eslint @typescript-eslint/triple-slash-reference: "off" */
-/// <reference path="../../../node_modules/mux-embed/dist/types/mux-embed.d.ts" />
+import type { ValueOf, PlaybackCore, MuxMediaProps, MuxMediaPropsInternal, MuxMediaPropTypes } from './types';
 import mux, { ErrorEvent } from 'mux-embed';
 import Hls from './hls';
 import type { HlsInterface } from './hls';
-import { MediaError } from './errors';
+import type { ErrorData, HlsConfig } from 'hls.js';
+import { MediaError, MuxErrorCategory, MuxErrorCode, errorCategoryToTokenNameOrPrefix } from './errors';
 import { setupAutoplay } from './autoplay';
 import { setupPreload } from './preload';
 import { setupMediaTracks } from './media-tracks';
@@ -29,23 +29,21 @@ import {
   toStreamTypeFromPlaylistType,
   toTargetLiveWindowFromPlaylistType,
   addEventListenerWithTeardown,
+  i18n,
+  parseJwt,
 } from './util';
-import type {
-  ValueOf,
-  PlaybackCore,
-  MuxMediaProps,
-  MuxMediaPropsInternal,
-  MaxResolutionValue,
-  MinResolutionValue,
-  RenditionOrderValue,
-} from './types';
 import { StreamTypes, PlaybackTypes, ExtensionMimeTypeMap, CmcdTypes, HlsPlaylistTypes, MediaTypes } from './types';
-import type { HlsConfig } from 'hls.js';
+import { getErrorFromResponse, MuxJWTAud } from './request-errors';
+import MinCapLevelController from './min-cap-level-controller';
 // import { MediaKeySessionContext } from 'hls.js';
 export {
   mux,
   Hls,
   MediaError,
+  MuxErrorCategory,
+  MuxErrorCode,
+  errorCategoryToTokenNameOrPrefix,
+  MuxJWTAud,
   addTextTrack,
   removeTextTrack,
   getTextTrack,
@@ -59,6 +57,9 @@ export {
   setupChapters,
   getStartDate,
   getCurrentPdt,
+  toPlaybackIdParts,
+  i18n,
+  parseJwt,
 };
 export * from './types';
 
@@ -78,14 +79,24 @@ export const toDRMTypeFromKeySystem = (keySystem: string): DRMTypeValue | undefi
 
 export const getMediaPlaylistLinesFromMultivariantPlaylistSrc = async (src: string) => {
   return fetch(src)
-    .then((resp) => resp.text())
+    .then((resp) => {
+      if (resp.status !== 200) {
+        return Promise.reject(resp);
+      }
+      return resp.text();
+    })
     .then((multivariantPlaylistStr) => {
       const mediaPlaylistUrl = multivariantPlaylistStr.split('\n').find((_line, idx, lines) => {
         return idx && lines[idx - 1].startsWith('#EXT-X-STREAM-INF');
       }) as string;
 
       return fetch(mediaPlaylistUrl)
-        .then((resp) => resp.text())
+        .then((resp) => {
+          if (resp.status !== 200) {
+            return Promise.reject(resp);
+          }
+          return resp.text();
+        })
         .then((mediaPlaylistStr) => mediaPlaylistStr.split('\n'));
     });
 };
@@ -237,8 +248,43 @@ export const updateStreamInfoFromHlsjsLevelDetails = (
   mediaEl.dispatchEvent(new CustomEvent('streamtypechange', { composed: true, bubbles: true }));
 };
 
+declare global {
+  interface NavigatorUAData {
+    platform: string;
+    mobile: boolean;
+    brands: Array<{ brand: string; version: string }>;
+  }
+
+  interface Navigator {
+    userAgentData?: NavigatorUAData;
+  }
+}
+
 const userAgentStr = globalThis?.navigator?.userAgent ?? '';
-const isAndroid = userAgentStr.toLowerCase().indexOf('android') !== -1;
+const userAgentPlatform = globalThis?.navigator?.userAgentData?.platform ?? '';
+
+// NOTE: Our primary *goal* with this is to detect "non-Apple-OS" platforms which may also support
+// native HLS playback. Our primary concern with any check for this is "false negatives" where we
+// identify an "Apple-OS" as a "non-Apple-OS". As such, instead of having logic to attempt to identify
+// "!isAppleOS", we opt to target known platforms that can support both native playback and MSE/hls.js.
+// For now, these are "Android or Android-like" platforms. If we end up matching platforms other than
+// Android (or e.g. forks thereof), this is fine so long as it doesn't include Apple-OS platforms.
+// Below are two strategies:
+// 1. UA string parsing - here, we're extra cautious to only match if the UA string explicitly includes 'android'.
+//   This is prone to false negatives (aka "Android or Android-like" platforms that yield false), since
+//   detection using UA strings is intentionally and notoriously unreliable (See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent)
+//   and Google is even officially attempting to lock this down even more for security and privacy reasons
+//   (See: https://developers.google.com/privacy-sandbox/blog/user-agent-reduction-android-model-and-version)
+// 2. userAgentData.platform checking - here, we're matching either 'android' or 'x11', and could add more matches in the future
+//    While still prone to false negatives, we can be a bit more aggressive with matches here for a few reasons.
+//    First, navigator.userAgentData is still experimental, is only supported on a subset of Chromium browsers,
+//    and neither Mozilla nor Webkit have even established an official browser support position. In other words,
+//    Apple-OS Safari and even other Apple-OS browsers (including Chrome) will typically not even support this
+//    feature, and, if and when they do, the purpose of this new API is to avoid obfuscatory information, so
+//    we should be able to better trust userAgentData.platform to not result in erroneous matches.
+const isAndroidLike =
+  userAgentStr.toLowerCase().includes('android') ||
+  ['x11', 'android'].some((platformStr) => userAgentPlatform.toLowerCase().includes(platformStr));
 
 // NOTE: Exporting for testing
 export const muxMediaState: WeakMap<
@@ -248,7 +294,7 @@ export const muxMediaState: WeakMap<
 
 const MUX_VIDEO_DOMAIN = 'mux.com';
 const MSE_SUPPORTED = Hls.isSupported?.();
-const DEFAULT_PREFER_MSE = isAndroid;
+const DEFAULT_PREFER_MSE = isAndroidLike;
 
 export const generatePlayerInitTime = () => {
   return mux.utils.now();
@@ -256,21 +302,23 @@ export const generatePlayerInitTime = () => {
 
 export const generateUUID = mux.utils.generateUUID;
 
-type MuxVideoURLProps = Partial<{
-  playbackId: string;
-  customDomain: string;
-  maxResolution: MaxResolutionValue;
-  minResolution: MinResolutionValue;
-  renditionOrder: RenditionOrderValue;
-  programStartTime: number;
-  programEndTime: number;
-  tokens: Partial<{
-    playback: string;
-    storyboard: string;
-    thumbnail: string;
-  }>;
-  extraSourceParams: Record<string, any>;
-}>;
+type MuxVideoURLProps = Partial<
+  Pick<
+    MuxMediaPropTypes,
+    | 'playbackId'
+    | 'customDomain'
+    | 'maxResolution'
+    | 'minResolution'
+    | 'renditionOrder'
+    | 'programStartTime'
+    | 'programEndTime'
+    | 'assetStartTime'
+    | 'assetEndTime'
+    | 'tokens'
+    | 'playbackToken'
+    | 'extraSourceParams'
+  >
+>;
 
 export const toMuxVideoURL = ({
   playbackId: playbackIdWithParams,
@@ -280,10 +328,15 @@ export const toMuxVideoURL = ({
   renditionOrder,
   programStartTime,
   programEndTime,
-  tokens: { playback: token } = {},
+  assetStartTime,
+  assetEndTime,
+  // Normalizes different ways of providing playback token
+  playbackToken,
+  tokens: { playback: token = playbackToken } = {},
   extraSourceParams = {},
 }: MuxVideoURLProps = {}) => {
   if (!playbackIdWithParams) return undefined;
+  // Normalizes different ways of providing playback id
   const [playbackId, queryPart = ''] = toPlaybackIdParts(playbackIdWithParams);
   const url = new URL(`https://stream.${domain}/${playbackId}.m3u8${queryPart}`);
   /*
@@ -321,6 +374,12 @@ export const toMuxVideoURL = ({
     }
     if (programEndTime) {
       url.searchParams.set('program_end_time', `${programEndTime}`);
+    }
+    if (assetStartTime) {
+      url.searchParams.set('asset_start_time', `${assetStartTime}`);
+    }
+    if (assetEndTime) {
+      url.searchParams.set('asset_end_time', `${assetEndTime}`);
     }
     Object.entries(extraSourceParams).forEach(([k, v]) => {
       if (v == undefined) return;
@@ -531,15 +590,7 @@ export const setupHls = (
   props: Partial<
     Pick<
       MuxMediaPropsInternal,
-      | 'debug'
-      | 'streamType'
-      | 'type'
-      | 'startTime'
-      | 'metadata'
-      | 'preferCmcd'
-      | '_hlsConfig'
-      | 'drmToken'
-      | 'drmTypeCb'
+      'debug' | 'streamType' | 'type' | 'startTime' | 'metadata' | 'preferCmcd' | '_hlsConfig' | 'tokens' | 'drmTypeCb'
     >
   >,
   mediaEl: Pick<HTMLMediaElement, 'canPlayType'>
@@ -586,6 +637,7 @@ export const setupHls = (
 
         xhr.open('GET', urlObj);
       },
+      capLevelController: MinCapLevelController,
       ...defaultConfig,
       ...streamTypeConfig,
       ...drmConfig,
@@ -611,14 +663,14 @@ export const getStreamTypeConfig = (streamType?: ValueOf<StreamTypes>) => {
 };
 
 export const getDRMConfig = (
-  props: Partial<Pick<MuxMediaPropsInternal, 'src' | 'playbackId' | 'drmToken' | 'customDomain' | 'drmTypeCb'>>
+  props: Partial<Pick<MuxMediaPropsInternal, 'src' | 'playbackId' | 'tokens' | 'customDomain' | 'drmTypeCb'>>
 ): Partial<HlsConfig> => {
   const {
-    drmToken,
-    src,
-    playbackId = toPlaybackIdFromSrc(src), // Since Mux Player typically sets `src` instead of `playbackId`, fall back to it here (CJP)
+    tokens: { drm: drmToken } = {},
+    playbackId: playbackIdWithOptionalParams, // Since Mux Player typically sets `src` instead of `playbackId`, fall back to it here (CJP)
     drmTypeCb,
   } = props;
+  const playbackId = toPlaybackIdFromParameterized(playbackIdWithOptionalParams);
   if (!drmToken || !playbackId) return {};
   return {
     emeEnabled: true,
@@ -667,22 +719,28 @@ export const getDRMConfig = (
 
 export const getAppCertificate = async (appCertificateUrl: string) => {
   const resp = await fetch(appCertificateUrl);
+  if (resp.status !== 200) {
+    return Promise.reject(resp);
+  }
   const body = await resp.arrayBuffer();
   return body;
 };
 
 export const getLicenseKey = async (message: ArrayBuffer, licenseServerUrl: string) => {
-  const licenseResponse = await fetch(licenseServerUrl, {
+  const resp = await fetch(licenseServerUrl, {
     method: 'POST',
     headers: { 'Content-type': 'application/octet-stream' },
     body: message,
   });
-  const keyBuffer = await licenseResponse.arrayBuffer();
+  if (resp.status !== 200) {
+    return Promise.reject(resp);
+  }
+  const keyBuffer = await resp.arrayBuffer();
   return new Uint8Array(keyBuffer);
 };
 
 export const setupNativeFairplayDRM = (
-  props: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'drmToken' | 'customDomain' | 'drmTypeCb'>>,
+  props: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'tokens' | 'playbackToken' | 'customDomain' | 'drmTypeCb'>>,
   mediaEl: HTMLMediaElement
 ) => {
   const onFpEncrypted = async (event: MediaEncryptedEvent) => {
@@ -707,12 +765,49 @@ export const setupNativeFairplayDRM = (
           .then((value) => {
             props.drmTypeCb?.(DRMType.FAIRPLAY);
             return value;
+          })
+          .catch(() => {
+            const message = i18n(
+              'Cannot play DRM-protected content with current security configuration on this browser. Try playing in another browser.'
+            );
+            // Should we flag this as a business exception?
+            const mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+            mediaError.errorCategory = MuxErrorCategory.DRM;
+            mediaError.muxCode = MuxErrorCode.ENCRYPTED_UNSUPPORTED_KEY_SYSTEM;
+            saveAndDispatchError(mediaEl, mediaError);
           });
+
+        if (!access) return;
 
         const keys = await access.createMediaKeys();
 
-        const fairPlayAppCert = await getAppCertificate(toAppCertURL(props, 'fairplay'));
-        await keys.setServerCertificate(fairPlayAppCert);
+        try {
+          const fairPlayAppCert = await getAppCertificate(toAppCertURL(props, 'fairplay')).catch((errOrResp) => {
+            if (errOrResp instanceof Response) {
+              const mediaError = getErrorFromResponse(errOrResp, MuxErrorCategory.DRM, props);
+              console.error('mediaError', mediaError?.message, mediaError?.context);
+              if (mediaError) {
+                return Promise.reject(mediaError);
+              }
+              // NOTE: This should never happen. Adding for exhaustiveness (CJP).
+              return Promise.reject(new Error('Unexpected error in app cert request'));
+            }
+            return Promise.reject(errOrResp);
+          });
+          await keys.setServerCertificate(fairPlayAppCert).catch(() => {
+            const message = i18n(
+              'Your server certificate failed when attempting to set it. This may be an issue with a no longer valid certificate.'
+            );
+            const mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+            mediaError.errorCategory = MuxErrorCategory.DRM;
+            mediaError.muxCode = MuxErrorCode.ENCRYPTED_UPDATE_SERVER_CERT_FAILED;
+            return Promise.reject(mediaError);
+          });
+          // @ts-ignore
+        } catch (error: Error | MediaError) {
+          saveAndDispatchError(mediaEl, error);
+          return;
+        }
         await mediaEl.setMediaKeys(keys);
       }
 
@@ -723,22 +818,83 @@ export const setupNativeFairplayDRM = (
       }
 
       const session = (mediaEl.mediaKeys as MediaKeys).createSession();
-      session.generateRequest(initDataType, initData);
-      const message = await new Promise<MediaKeyMessageEvent['message']>((resolve) => {
-        session.addEventListener(
-          'message',
-          (messageEvent) => {
-            resolve(messageEvent.message);
-          },
-          { once: true }
-        );
-      });
+      session.addEventListener('keystatuseschange', () => {
+        // recheck key statuses
+        // NOTE: As an improvement, we could also add checks for a status of 'expired' and
+        // attempt to renew the license here (CJP)
+        session.keyStatuses.forEach((mediaKeyStatus) => {
+          let mediaError;
+          if (mediaKeyStatus === 'internal-error') {
+            const message = i18n(
+              'The DRM Content Decryption Module system had an internal failure. Try reloading the page, upading your browser, or playing in another browser.'
+            );
+            mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+            mediaError.errorCategory = MuxErrorCategory.DRM;
+            mediaError.muxCode = MuxErrorCode.ENCRYPTED_CDM_ERROR;
+          } else if (mediaKeyStatus === 'output-restricted' || mediaKeyStatus === 'output-downscaled') {
+            const message = i18n(
+              'DRM playback is being attempted in an environment that is not sufficiently secure. User may see black screen.'
+            );
+            // NOTE: When encountered, this is a non-fatal error (though it's certainly interruptive of standard playback experience). (CJP)
+            mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, false);
+            mediaError.errorCategory = MuxErrorCategory.DRM;
+            mediaError.muxCode = MuxErrorCode.ENCRYPTED_OUTPUT_RESTRICTED;
+          }
 
-      const response = await getLicenseKey(message, toLicenseKeyURL(props, 'fairplay'));
-      await session.update(response);
-      return session;
-    } catch (e) {
-      console.error(`Could not start encrypted playback due to exception "${e}"`);
+          if (mediaError) {
+            saveAndDispatchError(mediaEl, mediaError);
+          }
+        });
+      });
+      const message = await Promise.all([
+        session.generateRequest(initDataType, initData).catch(() => {
+          // eslint-disable-next-line no-shadow
+          const message = i18n(
+            'Failed to generate a DRM license request. This may be an issue with the player or your protected content.'
+          );
+          const mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+          mediaError.errorCategory = MuxErrorCategory.DRM;
+          mediaError.muxCode = MuxErrorCode.ENCRYPTED_GENERATE_REQUEST_FAILED;
+          saveAndDispatchError(mediaEl, mediaError);
+        }),
+        new Promise<MediaKeyMessageEvent['message']>((resolve) => {
+          session.addEventListener(
+            'message',
+            (messageEvent) => {
+              resolve(messageEvent.message);
+            },
+            { once: true }
+          );
+        }),
+      ]).then(([, messageEventMsg]) => messageEventMsg);
+      session.generateRequest(initDataType, initData);
+
+      const response = await getLicenseKey(message, toLicenseKeyURL(props, 'fairplay')).catch((errOrResp) => {
+        if (errOrResp instanceof Response) {
+          const mediaError = getErrorFromResponse(errOrResp, MuxErrorCategory.DRM, props);
+          console.error('mediaError', mediaError?.message, mediaError?.context);
+          if (mediaError) {
+            return Promise.reject(mediaError);
+          }
+          // NOTE: This should never happen. Adding for exhaustiveness (CJP).
+          return Promise.reject(new Error('Unexpected error in license key request'));
+        }
+        return Promise.reject(errOrResp);
+      });
+      await session.update(response).catch(() => {
+        // eslint-disable-next-line no-shadow
+        const message = i18n(
+          'Failed to update DRM license. This may be an issue with the player or your protected content.'
+        );
+        const mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+        mediaError.errorCategory = MuxErrorCategory.DRM;
+        mediaError.muxCode = MuxErrorCode.ENCRYPTED_UPDATE_LICENSE_FAILED;
+        return Promise.reject(mediaError);
+      });
+      // @ts-ignore
+    } catch (error: Error | MediaError) {
+      saveAndDispatchError(mediaEl, error);
+      return;
     }
   };
 
@@ -747,12 +903,13 @@ export const setupNativeFairplayDRM = (
 
 export const toLicenseKeyURL = (
   {
-    playbackId,
-    drmToken: token,
+    playbackId: playbackIdWithParams,
+    tokens: { drm: token } = {},
     customDomain = MUX_VIDEO_DOMAIN,
-  }: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'drmToken' | 'customDomain'>>,
+  }: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'tokens' | 'customDomain'>>,
   scheme: 'widevine' | 'playready' | 'fairplay'
 ) => {
+  const playbackId = toPlaybackIdFromParameterized(playbackIdWithParams);
   // NOTE: Mux Video currently doesn't support custom domains for license/DRM endpoints, but
   // customDomain can also be used for internal use cases, so treat that as an exception case for now. (CJP)
   const domain = customDomain.toLocaleLowerCase().endsWith(MUX_VIDEO_DOMAIN) ? customDomain : MUX_VIDEO_DOMAIN;
@@ -761,12 +918,13 @@ export const toLicenseKeyURL = (
 
 export const toAppCertURL = (
   {
-    playbackId,
-    drmToken: token,
+    playbackId: playbackIdWithParams,
+    tokens: { drm: token } = {},
     customDomain = MUX_VIDEO_DOMAIN,
-  }: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'drmToken' | 'customDomain'>>,
+  }: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'tokens' | 'customDomain'>>,
   scheme: 'widevine' | 'playready' | 'fairplay'
 ) => {
+  const playbackId = toPlaybackIdFromParameterized(playbackIdWithParams);
   // NOTE: Mux Video currently doesn't support custom domains for license/DRM endpoints, but
   // customDomain can also be used for internal use cases, so treat that as an exception case for now. (CJP)
   const domain = customDomain.toLocaleLowerCase().endsWith(MUX_VIDEO_DOMAIN) ? customDomain : MUX_VIDEO_DOMAIN;
@@ -875,7 +1033,7 @@ export const loadMedia = (
       | 'streamType'
       | 'autoplay'
       | 'playbackId'
-      | 'drmToken'
+      | 'tokens'
       | 'customDomain'
     >
   >,
@@ -924,12 +1082,17 @@ export const loadMedia = (
     }
   };
 
-  let prevSeekableStart: number;
-  let prevSeekableEnd: number;
+  let prevSeekableStart: number | undefined;
+  let prevSeekableEnd: number | undefined;
 
   const seekableChange = () => {
-    const nextSeekableStart = getSeekable(mediaEl)?.start(0);
-    const nextSeekableEnd = getSeekable(mediaEl)?.end(0);
+    const seekableTimeRanges = getSeekable(mediaEl);
+    let nextSeekableStart: number | undefined;
+    let nextSeekableEnd: number | undefined;
+    if (seekableTimeRanges.length > 0) {
+      nextSeekableStart = seekableTimeRanges.start(0);
+      nextSeekableEnd = seekableTimeRanges.end(0);
+    }
     if (prevSeekableEnd !== nextSeekableEnd || prevSeekableStart !== nextSeekableStart) {
       mediaEl.dispatchEvent(new CustomEvent('seekablechange', { composed: true }));
     }
@@ -972,6 +1135,21 @@ export const loadMedia = (
           clearInterval(intervalId);
         });
       };
+      const setupNativeStreamInfo = async () => {
+        return updateStreamInfoFromSrc(src, mediaEl, type)
+          .then(setupSeekableChangePoll)
+          .catch((errOrResp: Response | Error) => {
+            if (errOrResp instanceof Response) {
+              const mediaError = getErrorFromResponse(errOrResp, MuxErrorCategory.VIDEO, props);
+              if (mediaError) {
+                saveAndDispatchError(mediaEl, mediaError);
+                return;
+              }
+            } else if (errOrResp instanceof Error) {
+              // mediaEl.dispatchEvent(new MediaError())
+            }
+          });
+      };
       if (mediaEl.preload === 'none') {
         // NOTE: Previously, we relied on the 'loadstart' event to fetch & parse playlists for stream
         // info for native playback scenarios. Unfortunately, per spec this event will be dispatched
@@ -986,22 +1164,37 @@ export const loadMedia = (
         // media resource in the HTML Living Standard
         // (https://html.spec.whatwg.org/multipage/media.html#concept-media-load-algorithm)
         const playHandler = () => {
-          updateStreamInfoFromSrc(src, mediaEl, type).then(setupSeekableChangePoll);
+          setupNativeStreamInfo();
           mediaEl.removeEventListener('loadedmetadata', loadedMetadataHandler);
         };
         const loadedMetadataHandler = () => {
-          updateStreamInfoFromSrc(src, mediaEl, type).then(setupSeekableChangePoll);
+          setupNativeStreamInfo();
           mediaEl.removeEventListener('play', playHandler);
         };
         addEventListenerWithTeardown(mediaEl, 'play', playHandler, { once: true });
         addEventListenerWithTeardown(mediaEl, 'loadedmetadata', loadedMetadataHandler, { once: true });
       } else {
-        updateStreamInfoFromSrc(src, mediaEl, type).then(setupSeekableChangePoll);
+        setupNativeStreamInfo();
       }
 
       // NOTE: Currently use drmToken to signal that playback is expected to be DRM-protected
-      if (props.drmToken) {
+      if (props.tokens?.drm) {
         setupNativeFairplayDRM(props, mediaEl);
+      } else {
+        // If we end up receiving an encrypted event in this case, that means the media is DRM-protected
+        // but a token was not provided.
+        addEventListenerWithTeardown(
+          mediaEl,
+          'encrypted',
+          () => {
+            const message = i18n('Attempting to play DRM-protected content without providing a DRM token.');
+            const mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+            mediaError.errorCategory = MuxErrorCategory.DRM;
+            mediaError.muxCode = MuxErrorCode.ENCRYPTED_MISSING_TOKEN;
+            saveAndDispatchError(mediaEl, mediaError);
+          },
+          { once: true }
+        );
       }
 
       mediaEl.setAttribute('src', src);
@@ -1059,39 +1252,7 @@ export const loadMedia = (
     });
 
     hls.on(Hls.Events.ERROR, (_event, data) => {
-      // if (data.fatal) {
-      //   switch (data.type) {
-      //     case Hls.ErrorTypes.NETWORK_ERROR:
-      //       // try to recover network error
-      //       console.error("fatal network error encountered, try to recover");
-      //       hls.startLoad();
-      //       break;
-      //     case Hls.ErrorTypes.MEDIA_ERROR:
-      //       console.error("fatal media error encountered, try to recover");
-      //       hls.recoverMediaError();
-      //       break;
-      //     default:
-      //       // cannot recover
-      //       console.error(
-      //         "unrecoverable fatal error encountered, cannot recover (check logs for more info)"
-      //       );
-      //       hls.destroy();
-      //       break;
-      //   }
-      // }
-
-      const errorCodeMap: Record<string, number> = {
-        [Hls.ErrorTypes.NETWORK_ERROR]: MediaError.MEDIA_ERR_NETWORK,
-        [Hls.ErrorTypes.MEDIA_ERROR]: MediaError.MEDIA_ERR_DECODE,
-      };
-      const error = new MediaError('', errorCodeMap[data.type]);
-      error.fatal = data.fatal;
-      error.data = data;
-      mediaEl.dispatchEvent(
-        new CustomEvent('error', {
-          detail: error,
-        })
-      );
+      saveAndDispatchError(mediaEl, getErrorFromHlsErrorData(data, props));
     });
     mediaEl.addEventListener('error', handleInternalError);
     addEventListenerWithTeardown(mediaEl, 'waiting', maybeDispatchEndedCallback);
@@ -1143,14 +1304,53 @@ async function handleNativeError(event: Event) {
   const { message, code } = mediaEl.error;
   const error = new MediaError(message, code);
 
+  // This accounts for cases where native playback is being used but
+  // a non-200 response occurs on the request for the playback-id's playlist.
+  // In this case, we currently already fetch the playlist in parallel (for
+  // things like inferring the stream type, live edge start window, etc.),
+  // so we'll wait briefly for that response to translate to a more accurate
+  // error.
+  if (
+    mediaEl.src &&
+    code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
+    mediaEl.readyState === HTMLMediaElement.HAVE_NOTHING
+  ) {
+    setTimeout(() => {
+      const ourError = getError(mediaEl) ?? mediaEl.error;
+      // If the code is (still) MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED,
+      // assume it's an (unlikely) case where we did, in fact, encounter
+      // media that is unsupported.
+      if (ourError?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+        saveAndDispatchError(mediaEl, error);
+      }
+      // Since a parallel request for the source should be initiated to determine
+      // stream info (e.g. streamType) at roughly the same time as when the source
+      // is loaded by the media element, we should be able to keep this timeout short.
+      // NOTE: Although there is a case where the parallel request may happen later
+      // (namely, after metadata is loaded), this should be mutually exclusive from
+      // the case we're accounting for here, since unsupported media should not
+      // ever get metadata loaded in the first place. (CJP)
+    }, 500);
+    return;
+  }
+
   if (mediaEl.src && (code !== MediaError.MEDIA_ERR_DECODE || code !== undefined)) {
     // Attempt to get the response code from the video src url.
     try {
-      const { status } = await fetch(mediaEl.src as RequestInfo);
+      const { status } = await fetch(mediaEl.src);
       // Use the same hls.js data structure.
       error.data = { response: { code: status } };
     } catch {}
   }
+
+  saveAndDispatchError(mediaEl, error);
+}
+
+function saveAndDispatchError(mediaEl: HTMLMediaElement, error: MediaError) {
+  // Prevent dispatching non-fatal errors.
+  if (!error.fatal) return;
+
+  (muxMediaState.get(mediaEl) ?? {}).error = error as unknown as HTMLMediaElement['error'];
 
   mediaEl.dispatchEvent(
     new CustomEvent('error', {
@@ -1164,7 +1364,7 @@ async function handleNativeError(event: Event) {
  * event so consumers are still able to disable or intercept this error event.
  * @param {Event} event
  */
-function handleInternalError(event: Event) {
+function handleInternalError(event: Event | CustomEvent<MediaError>) {
   if (!(event instanceof CustomEvent) || !(event.detail instanceof MediaError)) return;
 
   const mediaEl = event.target as HTMLMediaElement;
@@ -1181,3 +1381,119 @@ function handleInternalError(event: Event) {
     player_error_context: error.context,
   });
 }
+
+const getErrorFromHlsErrorData = (
+  data: ErrorData,
+  props: Partial<Pick<MuxMediaPropsInternal, 'playbackId' | 'drmToken' | 'playbackToken' | 'tokens'>>
+) => {
+  console.error('getErrorFromHlsErrorData()', data);
+  const ErrorCodeMap: Partial<Record<ValueOf<typeof Hls.ErrorTypes>, 0 | 1 | 2 | 3 | 4 | 5>> = {
+    [Hls.ErrorTypes.NETWORK_ERROR]: MediaError.MEDIA_ERR_NETWORK,
+    [Hls.ErrorTypes.MEDIA_ERROR]: MediaError.MEDIA_ERR_DECODE,
+    [Hls.ErrorTypes.KEY_SYSTEM_ERROR]: MediaError.MEDIA_ERR_ENCRYPTED,
+  } as const;
+
+  // eslint-disable-next-line no-shadow
+  const hlsErrorDataToErrorCode = (data: ErrorData) => {
+    if (
+      [
+        Hls.ErrorDetails.KEY_SYSTEM_LICENSE_REQUEST_FAILED,
+        Hls.ErrorDetails.KEY_SYSTEM_SERVER_CERTIFICATE_REQUEST_FAILED,
+      ].includes(data.details)
+    ) {
+      return MediaError.MEDIA_ERR_NETWORK;
+    }
+    return ErrorCodeMap[data.type];
+  };
+
+  // eslint-disable-next-line no-shadow
+  const hlsErrorDataToCategory = (data: ErrorData) => {
+    if (data.type === Hls.ErrorTypes.KEY_SYSTEM_ERROR) return MuxErrorCategory.DRM;
+    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) return MuxErrorCategory.VIDEO;
+  };
+
+  let mediaError: MediaError;
+  const errorCode = hlsErrorDataToErrorCode(data);
+  if (errorCode === MediaError.MEDIA_ERR_NETWORK && data.response) {
+    const category = hlsErrorDataToCategory(data) ?? MuxErrorCategory.VIDEO;
+    mediaError = getErrorFromResponse(data.response, category, props) ?? new MediaError('', errorCode);
+  } else if (errorCode === MediaError.MEDIA_ERR_ENCRYPTED) {
+    if (data.details === Hls.ErrorDetails.KEY_SYSTEM_NO_CONFIGURED_LICENSE) {
+      const message = i18n('Attempting to play DRM-protected content without providing a DRM token.');
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, data.fatal);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_MISSING_TOKEN;
+    } else if (data.details === Hls.ErrorDetails.KEY_SYSTEM_NO_ACCESS) {
+      /** @TODO For UI message add suggestion to try another browser */
+      const message = i18n(
+        'Cannot play DRM-protected content with current security configuration on this browser. Try playing in another browser.'
+      );
+      // Should we flag this as a business exception?
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, data.fatal);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_UNSUPPORTED_KEY_SYSTEM;
+    } else if (data.details === Hls.ErrorDetails.KEY_SYSTEM_NO_SESSION) {
+      const message = i18n(
+        'Failed to generate a DRM license request. This may be an issue with the player or your protected content.'
+      );
+      // NOTE: For some reason, perhaps due to issues with EXT-X-KEY parsing, hls.js defines this as a non-fatal error.
+      // For us, we should be able to assume it is instead fatal. (CJP)
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, true);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_GENERATE_REQUEST_FAILED;
+    } else if (data.details === Hls.ErrorDetails.KEY_SYSTEM_SESSION_UPDATE_FAILED) {
+      const message = i18n(
+        'Failed to update DRM license. This may be an issue with the player or your protected content.'
+      );
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, data.fatal);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_UPDATE_LICENSE_FAILED;
+    } else if (data.details === Hls.ErrorDetails.KEY_SYSTEM_SERVER_CERTIFICATE_UPDATE_FAILED) {
+      const message = i18n(
+        'Your server certificate failed when attempting to set it. This may be an issue with a no longer valid certificate.'
+      );
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, data.fatal);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_UPDATE_SERVER_CERT_FAILED;
+    } else if (data.details === Hls.ErrorDetails.KEY_SYSTEM_STATUS_INTERNAL_ERROR) {
+      const message = i18n(
+        'The DRM Content Decryption Module system had an internal failure. Try reloading the page, upading your browser, or playing in another browser.'
+      );
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, data.fatal);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_CDM_ERROR;
+    } else if (data.details === Hls.ErrorDetails.KEY_SYSTEM_STATUS_OUTPUT_RESTRICTED) {
+      const message = i18n(
+        'DRM playback is being attempted in an environment that is not sufficiently secure. User may see black screen.'
+      );
+      // NOTE: When encountered, this is a non-fatal error (though it's certainly interruptive of standard playback experience). (CJP)
+      mediaError = new MediaError(message, MediaError.MEDIA_ERR_ENCRYPTED, false);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_OUTPUT_RESTRICTED;
+    } else {
+      mediaError = new MediaError(data.error.message, MediaError.MEDIA_ERR_ENCRYPTED, data.fatal);
+      mediaError.errorCategory = MuxErrorCategory.DRM;
+      mediaError.muxCode = MuxErrorCode.ENCRYPTED_ERROR;
+    }
+  } else {
+    mediaError = new MediaError('', errorCode, data.fatal);
+  }
+  if (!mediaError.context) {
+    mediaError.context =
+      `${data.url ? `url: ${data.url}\n` : ''}` +
+      `${
+        data.response && (data.response.code || data.response.text)
+          ? `response: ${data.response.code}, ${data.response.text}\n`
+          : ''
+      }` +
+      `${data.reason ? `failure reason: ${data.reason}\n` : ''}` +
+      `${data.level ? `level: ${data.level}\n` : ''}` +
+      `${data.parent ? `parent stream controller: ${data.parent}\n` : ''}` +
+      `${data.buffer ? `buffer length: ${data.buffer}\n` : ''}` +
+      `${data.error ? `error: ${data.error}\n` : ''}` +
+      `${data.event ? `event: ${data.event}\n` : ''}` +
+      `${data.err ? `error message: ${data.err?.message}\n` : ''}`;
+  }
+  mediaError.data = data;
+  return mediaError;
+};

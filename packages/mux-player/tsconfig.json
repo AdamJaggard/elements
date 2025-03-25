@@ -13,12 +13,12 @@
     "composite": true,
     "strict": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "baseUrl": "./packages",
     "esModuleInterop": true,
     "skipLibCheck": false,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["node_modules/@types", "../../types/media-chrome.d.ts"]
+    "typeRoots": ["node_modules/@types"]
   },
-  "include": ["src/**/*", "../../types/media-chrome.d.ts", "../../node_modules/media-tracks/dist/global.d.ts"]
+  "include": ["src/**/*", "../../node_modules/media-tracks/dist/global.d.ts"]
 }

@@ -38,16 +38,37 @@
       </div>
     </header>
 
+    <h2>On-demand</h2>
+
     <mux-player
       stream-type="on-demand"
-      playback-id="23s11nz72DsoN657h4314PjKKjsF2JG33eBQQt6B95I"
-    ></mux-player>
+      playback-id="Sc89iWAyNkhJ3P1rQ02nrEdCFTnfT01CZ2KmaEcxXfB008"
+    >
+      <track label="Japanese" kind="captions" srclang="ja" src="./vtt/elephantsdream/captions.ja.vtt"></track>
+      <track default kind="chapters" src="./vtt/elephantsdream/chapters.vtt"></track>
+    </mux-player>
+
+    <button id="load-new-playback-id">Load new playback id</button>
+    <script>
+      document.getElementById('load-new-playback-id').addEventListener('click', () => {
+        const player = document.querySelector('mux-player');
+        player.playbackId = 'VcmKA6aqzIzlg3MayLJDnbF55kX00mds028Z65QxvBYaA';
+      });
+    </script>
+
+    <h2>Live</h2>
 
     <mux-player
       stream-type="live"
       target-live-window="Infinity"
       playback-id="v69RSHhFelSm4701snP22dYz2jICy4E4FUyk02rW4gxRM"
       title="My amazing video"
+    ></mux-player>
+
+    <mux-player
+      stream-type="on-demand"
+      playback-id="Sc89iWAyNkhJ3P1rQ02nrEdCFTnfT01CZ2KmaEcxXfB008"
+      proudly-display-mux-badge
     ></mux-player>
 
     <a href="../">Browse Elements</a>

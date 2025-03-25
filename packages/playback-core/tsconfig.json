@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "preserveWatchOutput": true,
+    "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "./dist/types",
     "declaration": true,
@@ -13,12 +14,12 @@
     "composite": true,
     "strict": true,
     "noImplicitAny": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "baseUrl": "./packages",
     "esModuleInterop": true,
     "skipLibCheck": false,
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["node_modules/@types"]
   },
-  "include": ["src/**/*", "../../node_modules/media-tracks/dist/global.d.ts"]
+  "include": ["src/**/*", "src/lang/*.json", "../../node_modules/media-tracks/dist/global.d.ts"]
 }

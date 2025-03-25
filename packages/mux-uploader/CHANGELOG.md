@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.2.0](https://github.com/muxinc/elements/compare/@mux/mux-uploader@1.1.2...@mux/mux-uploader@1.2.0) (2025-03-21)
+
+
+### Features
+
+* add additional custom properties to mux-uploader progress bar ([#1069](https://github.com/muxinc/elements/issues/1069)) ([bbe1e38](https://github.com/muxinc/elements/commit/bbe1e38af108a79a45ebfe712a76d0dcab7c5d94))
+
+
+### Bug Fixes
+
+* upgrade dependencies (castable-video, ...) ([#1087](https://github.com/muxinc/elements/issues/1087)) ([dc84f07](https://github.com/muxinc/elements/commit/dc84f07109565dc7ee29d691a0fc941c6854f762))
+
+## [1.1.2](https://github.com/muxinc/elements/compare/@mux/mux-uploader@1.1.1...@mux/mux-uploader@1.1.2) (2025-02-13)
+
+
+### Bug Fixes
+
+* upgrade MC, fix theme flicker ([#1067](https://github.com/muxinc/elements/issues/1067)) ([b2fad06](https://github.com/muxinc/elements/commit/b2fad068300420d12ad25f26f24f8189f7ba6907))
+
+## [1.1.1](https://github.com/muxinc/elements/compare/@mux/mux-uploader@1.1.0...@mux/mux-uploader@1.1.1) (2024-12-20)
+
+
+### Bug Fixes
+
+* upgrade deps custom-media-element, hls.js, mux-embed, ... ([#1052](https://github.com/muxinc/elements/issues/1052)) ([dd4264d](https://github.com/muxinc/elements/commit/dd4264d51671989a29c037e912a128056acea5f8))
+
+## [1.1.0](https://github.com/muxinc/elements/compare/@mux/mux-uploader@1.0.2...@mux/mux-uploader@1.1.0) (2024-12-12)
+
+
+### Features
+
+* Set default player init time for all elements for greater accuracy. Expose attr+prop for externally defined player init time. ([#1034](https://github.com/muxinc/elements/issues/1034)) ([61f10d3](https://github.com/muxinc/elements/commit/61f10d3933e487e44795a8e42e36721ae00873d2))
+
+
+### Bug Fixes
+
+* move package exports default condition to be last ([#1013](https://github.com/muxinc/elements/issues/1013)) ([192aa79](https://github.com/muxinc/elements/commit/192aa79903d3c01fc9ce9fda3d8a35be3c56fc83))
+
+## [1.0.2](https://github.com/muxinc/elements/compare/@mux/mux-uploader@1.0.1...@mux/mux-uploader@1.0.2) (2024-09-20)
+
+**Note:** Version bump only for package @mux/mux-uploader
+
+
+
+
+
 ## [1.0.1](https://github.com/muxinc/elements/compare/@mux/mux-uploader@1.0.0...@mux/mux-uploader@1.0.1) (2024-08-02)
 
 **Note:** Version bump only for package @mux/mux-uploader

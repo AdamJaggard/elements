@@ -1,5 +1,5 @@
 import { globalThis, document } from './polyfills';
-import { MediaController } from 'media-chrome';
+import { MediaController, MediaErrorDialog } from 'media-chrome';
 import { Attributes as MediaControllerAttributes } from 'media-chrome/dist/media-container.js';
 import { MediaUIAttributes } from 'media-chrome/dist/constants.js';
 import 'media-chrome/dist/experimental/index.js';
@@ -12,6 +12,10 @@ import {
   removeTextTrack,
   CmcdTypes,
   CmcdTypeValues,
+  i18n,
+  parseJwt,
+  MuxJWTAud,
+  generatePlayerInitTime,
 } from '@mux/playback-core';
 import type {
   ValueOf,
@@ -20,6 +24,9 @@ import type {
   MaxResolutionValue,
   MinResolutionValue,
   RenditionOrderValue,
+  Chapter,
+  CuePoint,
+  Tokens,
 } from '@mux/playback-core';
 import VideoApiElement from './video-api';
 import {
@@ -32,21 +39,17 @@ import {
 } from './helpers';
 import { template } from './template';
 import { render } from './html';
-import { getErrorLogs } from './errors';
-import { toNumberOrUndefined, i18n, parseJwt, containsComposedNode, camelCase, kebabCase } from './utils';
+import { muxMediaErrorToDialog, muxMediaErrorToDevlog } from './errors';
+import { toNumberOrUndefined, containsComposedNode, camelCase, kebabCase } from './utils';
 import * as logger from './logger';
 import type { MuxTemplateProps, ErrorEvent } from './types';
 import './themes/gerwig';
 import { HlsConfig } from 'hls.js';
 const DefaultThemeName = 'gerwig';
 
-export { MediaError };
-export type Tokens = {
-  playback?: string;
-  drm?: string;
-  thumbnail?: string;
-  storyboard?: string;
-};
+export type { Tokens };
+
+export { MediaError, generatePlayerInitTime };
 
 const VideoAttributes = {
   SRC: 'src',
@@ -81,6 +84,8 @@ const PlayerAttributes = {
   EXTRA_SOURCE_PARAMS: 'extra-source-params',
   NO_VOLUME_PREF: 'no-volume-pref',
   CAST_RECEIVER: 'cast-receiver',
+  NO_TOOLTIPS: 'no-tooltips',
+  PROUDLY_DISPLAY_MUX_BADGE: 'proudly-display-mux-badge',
 };
 
 const ThemeAttributeNames = [
@@ -104,6 +109,7 @@ const ThemeAttributeNames = [
   'template',
   'title',
   'novolumepref',
+  'proudlydisplaymuxbadge',
 ];
 
 function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
@@ -141,8 +147,11 @@ function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
     minResolution: el.minResolution,
     programStartTime: el.programStartTime,
     programEndTime: el.programEndTime,
+    assetStartTime: el.assetStartTime,
+    assetEndTime: el.assetEndTime,
     renditionOrder: el.renditionOrder,
     metadata: el.metadata,
+    playerInitTime: el.playerInitTime,
     playerSoftwareName: el.playerSoftwareName,
     playerSoftwareVersion: el.playerSoftwareVersion,
     startTime: el.startTime,
@@ -165,6 +174,7 @@ function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
     title: el.getAttribute(PlayerAttributes.TITLE),
     novolumepref: el.hasAttribute(PlayerAttributes.NO_VOLUME_PREF),
     castReceiver: el.castReceiver,
+    proudlyDisplayMuxBadge: el.hasAttribute(PlayerAttributes.PROUDLY_DISPLAY_MUX_BADGE),
     ...state,
     // NOTE: since the attribute value is used as the "source of truth" for the property getter,
     // moving this below the `...state` spread so it resolves to the default value when unset (CJP)
@@ -173,6 +183,35 @@ function getProps(el: MuxPlayerElement, state?: any): MuxTemplateProps {
 
   return props;
 }
+
+const baseFormatErrorMessage = MediaErrorDialog.formatErrorMessage;
+MediaErrorDialog.formatErrorMessage = (error: { code: number; message: string }) => {
+  if (error instanceof MediaError) {
+    const dialog = muxMediaErrorToDialog(error, false);
+    return `
+      ${dialog?.title ? `<h3>${dialog.title}</h3>` : ''}
+      ${
+        dialog?.message || dialog?.linkUrl
+          ? `<p>
+        ${dialog?.message}
+        ${
+          dialog?.linkUrl
+            ? `<a
+              href="${dialog.linkUrl}"
+              target="_blank"
+              rel="external noopener"
+              aria-label="${dialog.linkText ?? ''} ${i18n(`(opens in a new window)`)}"
+              >${dialog.linkText ?? dialog.linkUrl}</a
+            >`
+            : ''
+        }
+      </p>`
+          : ''
+      }
+    `;
+  }
+  return baseFormatErrorMessage(error);
+};
 
 function getThemeTemplate(el: MuxPlayerElement) {
   let themeName = el.theme;
@@ -224,11 +263,11 @@ function getMetadataFromAttrs(el: MuxPlayerElement) {
 const MuxVideoAttributeNames = Object.values(MuxVideoAttributes);
 const VideoAttributeNames = Object.values(VideoAttributes);
 const PlayerAttributeNames = Object.values(PlayerAttributes);
-const playerSoftwareVersion = getPlayerVersion();
-const playerSoftwareName = 'mux-player';
+
+export const playerSoftwareVersion = getPlayerVersion();
+export const playerSoftwareName = 'mux-player';
 
 const initialState = {
-  dialog: undefined,
   isDialogOpen: false,
 };
 
@@ -240,6 +279,7 @@ export interface MuxPlayerElementEventMap extends HTMLVideoElementEventMap {
   chapterchange: CustomEvent<{ startTime: number; endTime: number; value: string }>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 interface MuxPlayerElement
   extends Omit<
     HTMLVideoElement,
@@ -274,19 +314,37 @@ interface MuxPlayerElement
   ): void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
+  #defaultPlayerInitTime: number;
   #isInit = false;
-  #tokens = {};
+  #tokens: Tokens = {};
   #userInactive = true;
   #hotkeys = new AttributeTokenList(this, 'hotkeys');
   #state: Partial<MuxTemplateProps> = {
     ...initialState,
-    onCloseErrorDialog: () => this.#setState({ dialog: undefined, isDialogOpen: false }),
-    onInitFocusDialog: (e) => {
+    onCloseErrorDialog: (event) => {
+      const localName = (event.composedPath()[0] as HTMLElement)?.localName;
+      if (localName !== 'media-error-dialog') return;
+
+      this.#setState({ isDialogOpen: false });
+    },
+    onFocusInErrorDialog: (event) => {
+      const localName = (event.composedPath()[0] as HTMLElement)?.localName;
+      if (localName !== 'media-error-dialog') return;
+
       const isFocusedElementInPlayer = containsComposedNode(this, document.activeElement);
-      if (!isFocusedElementInPlayer) e.preventDefault();
+      if (!isFocusedElementInPlayer) event.preventDefault();
     },
   };
+
+  static get NAME() {
+    return playerSoftwareName;
+  }
+
+  static get VERSION() {
+    return playerSoftwareVersion;
+  }
 
   static get observedAttributes() {
     return [
@@ -299,6 +357,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
 
   constructor() {
     super();
+    this.#defaultPlayerInitTime = generatePlayerInitTime();
 
     this.attachShadow({ mode: 'open' });
     this.#setupCSSProperties();
@@ -325,21 +384,21 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     try {
       customElements.upgrade(this.mediaTheme as Node);
       if (!(this.mediaTheme instanceof globalThis.HTMLElement)) throw '';
-    } catch (error) {
+    } catch (_error) {
       logger.error(`<media-theme> failed to upgrade!`);
     }
 
     try {
       customElements.upgrade(this.media as Node);
       if (!(this.media instanceof MuxVideoElement)) throw '';
-    } catch (error) {
+    } catch (_error) {
       logger.error('<mux-video> failed to upgrade!');
     }
 
     try {
       customElements.upgrade(this.mediaController as Node);
       if (!(this.mediaController instanceof MediaController)) throw '';
-    } catch (error) {
+    } catch (_error) {
       logger.error(`<media-controller> failed to upgrade!`);
     }
 
@@ -376,7 +435,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
         syntax: '<color>',
         inherits: true,
       });
-    } catch (e) {}
+    } catch (_error) {}
   }
 
   get mediaTheme(): Element | null | undefined {
@@ -447,7 +506,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
         return;
       }
 
-      const { dialog, devlog } = getErrorLogs(error, !window.navigator.onLine, this.playbackId, this.playbackToken);
+      const devlog = muxMediaErrorToDevlog(error, false);
 
       if (devlog.message) {
         logger.devlog(devlog);
@@ -458,24 +517,19 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
         logger.error(`${error.name} data:`, error.data);
       }
 
-      this.#setState({ isDialogOpen: true, dialog });
+      this.#setState({ isDialogOpen: true });
     };
 
     // Keep this event listener on mux-player instead of calling onError directly
     // from video.onerror. This allows us to simulate errors from the outside.
     this.addEventListener('error', onError);
 
+    /** @TODO Push errorTranslator logic down to playback-core. Should be able to use MediaError message + context + code (muxCode?) (CJP) */
     if (this.media) {
       this.media.errorTranslator = (errorEvent: ErrorEvent = {}) => {
         if (!(this.media?.error instanceof MediaError)) return errorEvent;
 
-        const { devlog } = getErrorLogs(
-          this.media?.error,
-          !window.navigator.onLine,
-          this.playbackId,
-          this.playbackToken,
-          false
-        );
+        const devlog = muxMediaErrorToDevlog(this.media?.error, false);
 
         return {
           player_error_code: this.media?.error.code,
@@ -630,42 +684,64 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
       case PlayerAttributes.THUMBNAIL_TIME: {
         if (newValue != null && this.tokens.thumbnail) {
           logger.warn(
-            i18n(`Use of thumbnail-time with thumbnail-token is currently unsupported. Ignore thumbnail-time.`).format(
-              {}
-            )
+            i18n(`Use of thumbnail-time with thumbnail-token is currently unsupported. Ignore thumbnail-time.`)
           );
         }
         break;
       }
       case PlayerAttributes.THUMBNAIL_TOKEN: {
         if (newValue) {
-          const { aud } = parseJwt(newValue);
-          if (aud !== 't') {
-            logger.warn(
-              i18n(`The provided thumbnail-token should have audience value 'd' instead of '{aud}'.`).format({ aud })
-            );
+          const jwtObj = parseJwt(newValue);
+          /** @TODO refactor to account for other JWT-based errors (CJP) */
+          if (jwtObj) {
+            const { aud } = jwtObj;
+            const expectedAud = MuxJWTAud.THUMBNAIL;
+            const tokenNamePrefix = 'thumbnail';
+            if (aud !== expectedAud) {
+              logger.warn(
+                i18n(
+                  `The {tokenNamePrefix}-token has an incorrect aud value: {aud}. aud value should be {expectedAud}.`
+                ).format({ aud, expectedAud, tokenNamePrefix })
+              );
+            }
           }
         }
         break;
       }
       case PlayerAttributes.STORYBOARD_TOKEN: {
         if (newValue) {
-          const { aud } = parseJwt(newValue);
-          if (aud !== 's') {
-            logger.warn(
-              i18n(`The provided storyboard-token should have audience value 'd' instead of '{aud}'.`).format({ aud })
-            );
+          const jwtObj = parseJwt(newValue);
+          /** @TODO refactor to account for other JWT-based errors (CJP) */
+          if (jwtObj) {
+            const { aud } = jwtObj;
+            const expectedAud = MuxJWTAud.STORYBOARD;
+            const tokenNamePrefix = 'storyboard';
+            if (aud !== expectedAud) {
+              logger.warn(
+                i18n(
+                  `The {tokenNamePrefix}-token has an incorrect aud value: {aud}. aud value should be {expectedAud}.`
+                ).format({ aud, expectedAud, tokenNamePrefix })
+              );
+            }
           }
         }
         break;
       }
       case PlayerAttributes.DRM_TOKEN: {
         if (newValue) {
-          const { aud } = parseJwt(newValue);
-          if (aud !== 'd') {
-            logger.warn(
-              i18n(`The provided drm-token should have audience value 'd' instead of '{aud}'.`).format({ aud })
-            );
+          const jwtObj = parseJwt(newValue);
+          /** @TODO refactor to account for other JWT-based errors (CJP) */
+          if (jwtObj) {
+            const { aud } = jwtObj;
+            const expectedAud = MuxJWTAud.DRM;
+            const tokenNamePrefix = 'drm';
+            if (aud !== expectedAud) {
+              logger.warn(
+                i18n(
+                  `The {tokenNamePrefix}-token has an incorrect aud value: {aud}. aud value should be {expectedAud}.`
+                ).format({ aud, expectedAud, tokenNamePrefix })
+              );
+            }
           }
         }
         break;
@@ -700,7 +776,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
             logger.devlog({
               file: 'invalid-stream-type.md',
               message: i18n(
-                `Invalid stream-type value supplied: \`{streamType}\`. Please provide stream-type as either: \`on-demand\` or \`live\``
+                'Invalid stream-type value supplied: `{streamType}`. Please provide stream-type as either: `on-demand` or `live`'
               ).format({ streamType: this.streamType }),
             });
           }
@@ -1201,6 +1277,22 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     }
   }
 
+  get playerInitTime() {
+    if (!this.hasAttribute(MuxVideoAttributes.PLAYER_INIT_TIME)) return this.#defaultPlayerInitTime;
+    return toNumberOrUndefined(this.getAttribute(MuxVideoAttributes.PLAYER_INIT_TIME));
+  }
+
+  set playerInitTime(val) {
+    // don't cause an infinite loop and avoid change event dispatching
+    if (val == this.playerInitTime) return;
+
+    if (val == null) {
+      this.removeAttribute(MuxVideoAttributes.PLAYER_INIT_TIME);
+    } else {
+      this.setAttribute(MuxVideoAttributes.PLAYER_INIT_TIME, `${+val}`);
+    }
+  }
+
   /**
    * Get the player software name. Used by Mux Data.
    */
@@ -1299,6 +1391,30 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
       this.removeAttribute(MuxVideoAttributes.PROGRAM_END_TIME);
     } else {
       this.setAttribute(MuxVideoAttributes.PROGRAM_END_TIME, `${val}`);
+    }
+  }
+
+  get assetStartTime() {
+    return toNumberOrUndefined(this.getAttribute(MuxVideoAttributes.ASSET_START_TIME));
+  }
+
+  set assetStartTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(MuxVideoAttributes.ASSET_START_TIME);
+    } else {
+      this.setAttribute(MuxVideoAttributes.ASSET_START_TIME, `${val}`);
+    }
+  }
+
+  get assetEndTime() {
+    return toNumberOrUndefined(this.getAttribute(MuxVideoAttributes.ASSET_END_TIME));
+  }
+
+  set assetEndTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(MuxVideoAttributes.ASSET_END_TIME);
+    } else {
+      this.setAttribute(MuxVideoAttributes.ASSET_END_TIME, `${val}`);
     }
   }
 
@@ -1552,7 +1668,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     this.media._hlsConfig = val;
   }
 
-  async addCuePoints<T = any>(cuePoints: { time: number; value: T }[]) {
+  async addCuePoints<T = any>(cuePoints: CuePoint<T>[]) {
     this.#init();
 
     // NOTE: This condition should never be met. If it is, there is a bug (CJP)
@@ -1571,7 +1687,7 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
     return this.media?.cuePoints ?? [];
   }
 
-  addChapters(chapters: { startTime: number; endTime: number; value: string }[]) {
+  addChapters(chapters: Chapter[]) {
     this.#init();
 
     // NOTE: This condition should never be met. If it is, there is a bug (CJP)
@@ -1721,6 +1837,30 @@ class MuxPlayerElement extends VideoApiElement implements MuxPlayerElement {
       return;
     }
     this.media.castCustomData = val;
+  }
+
+  get noTooltips() {
+    return this.hasAttribute(PlayerAttributes.NO_TOOLTIPS);
+  }
+
+  set noTooltips(val: boolean) {
+    if (!val) {
+      this.removeAttribute(PlayerAttributes.NO_TOOLTIPS);
+      return;
+    }
+    this.setAttribute(PlayerAttributes.NO_TOOLTIPS, '');
+  }
+
+  get proudlyDisplayMuxBadge() {
+    return this.hasAttribute(PlayerAttributes.PROUDLY_DISPLAY_MUX_BADGE);
+  }
+
+  set proudlyDisplayMuxBadge(val: boolean) {
+    if (!val) {
+      this.removeAttribute(PlayerAttributes.PROUDLY_DISPLAY_MUX_BADGE);
+    } else {
+      this.setAttribute(PlayerAttributes.PROUDLY_DISPLAY_MUX_BADGE, '');
+    }
   }
 }
 

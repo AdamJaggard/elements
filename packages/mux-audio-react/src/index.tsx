@@ -23,17 +23,18 @@ export type Props = Omit<
 > &
   MuxMediaProps;
 
-const playerSoftwareVersion = getPlayerVersion();
-const playerSoftwareName = 'mux-audio-react';
+export const playerSoftwareVersion = getPlayerVersion();
+export const playerSoftwareName = 'mux-audio-react';
+export { generatePlayerInitTime };
 
 const MuxAudio = React.forwardRef<HTMLAudioElement | undefined, Partial<Props>>((props, ref) => {
-  const { playbackId, src: outerSrc, children, autoPlay, preload, ...restProps } = props;
+  const { playbackId, src: outerSrc, children, autoPlay, preload, tokens, playbackToken, ...restProps } = props;
 
   const nativeAudioProps = Object.fromEntries(
     Object.entries(restProps).filter(([key]) => !Object.keys(MuxAudio.propTypes as any).includes(key))
   );
 
-  const [playerInitTime] = useState(generatePlayerInitTime());
+  const [playerInitTime] = useState(props.playerInitTime ?? generatePlayerInitTime());
   const [src, setSrc] = useState<MuxMediaProps['src']>(toMuxVideoURL(props) ?? outerSrc);
   const playbackCoreRef = useRef<PlaybackCore | undefined>(undefined);
   const innerMediaElRef = useRef<HTMLAudioElement>(null);
@@ -45,9 +46,11 @@ const MuxAudio = React.forwardRef<HTMLAudioElement | undefined, Partial<Props>>(
 
   useEffect(() => {
     const propsWithState = {
+      // NOTE: Applying playerInitTime first as a simple way of overriding it if/when folks update
+      // the value via props after initial load (e.g. when swapping src)
+      playerInitTime,
       ...props,
       src,
-      playerInitTime,
       playerSoftwareName,
       playerSoftwareVersion,
       autoplay: autoPlay,
@@ -96,16 +99,19 @@ MuxAudio.propTypes = {
   metadata: PropTypes.any,
   minResolution: PropTypes.oneOf(['480p', '540p', '720p', '1080p', '1440p', '2160p']),
   playbackId: PropTypes.string,
+  playbackToken: PropTypes.string,
   playerInitTime: PropTypes.number,
   preferCmcd: PropTypes.oneOf(Object.values(CmcdTypes)),
   programStartTime: PropTypes.number,
   programEndTime: PropTypes.number,
+  assetStartTime: PropTypes.number,
+  assetEndTime: PropTypes.number,
   preferPlayback: PropTypes.oneOf(Object.values(PlaybackTypes)),
   renditionOrder: PropTypes.oneOf(['desc']),
   startTime: PropTypes.number,
   streamType: PropTypes.oneOf(Object.values(StreamTypes)),
   targetLiveWindow: PropTypes.number,
-  tokens: PropTypes.any,
+  tokens: PropTypes.object,
   type: PropTypes.oneOf(allMediaTypes),
 };
 

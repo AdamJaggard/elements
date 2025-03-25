@@ -26,6 +26,7 @@ import {
   getEnded,
   getChapters,
   toPlaybackIdFromSrc,
+  toPlaybackIdParts,
   // isMuxVideoSrc,
 } from '@mux/playback-core';
 import type {
@@ -37,6 +38,9 @@ import type {
   MaxResolutionValue,
   MinResolutionValue,
   RenditionOrderValue,
+  Chapter,
+  CuePoint,
+  Tokens,
 } from '@mux/playback-core';
 import { getPlayerVersion } from './env';
 // this must be imported after playback-core for the polyfill to be included
@@ -55,16 +59,20 @@ export const Attributes = {
   DISABLE_TRACKING: 'disable-tracking',
   DISABLE_COOKIES: 'disable-cookies',
   DRM_TOKEN: 'drm-token',
+  PLAYBACK_TOKEN: 'playback-token',
   ENV_KEY: 'env-key',
   MAX_RESOLUTION: 'max-resolution',
   MIN_RESOLUTION: 'min-resolution',
   RENDITION_ORDER: 'rendition-order',
   PROGRAM_START_TIME: 'program-start-time',
   PROGRAM_END_TIME: 'program-end-time',
+  ASSET_START_TIME: 'asset-start-time',
+  ASSET_END_TIME: 'asset-end-time',
   METADATA_URL: 'metadata-url',
   PLAYBACK_ID: 'playback-id',
   PLAYER_SOFTWARE_NAME: 'player-software-name',
   PLAYER_SOFTWARE_VERSION: 'player-software-version',
+  PLAYER_INIT_TIME: 'player-init-time',
   PREFER_CMCD: 'prefer-cmcd',
   PREFER_PLAYBACK: 'prefer-playback',
   START_TIME: 'start-time',
@@ -76,18 +84,27 @@ export const Attributes = {
 
 const AttributeNameValues = Object.values(Attributes);
 
-const playerSoftwareVersion = getPlayerVersion();
-const playerSoftwareName = 'mux-video';
+export const playerSoftwareVersion = getPlayerVersion();
+export const playerSoftwareName = 'mux-video';
 
 class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMediaProps> {
+  static get NAME() {
+    return playerSoftwareName;
+  }
+
+  static get VERSION() {
+    return playerSoftwareVersion;
+  }
+
   static get observedAttributes() {
     return [...AttributeNameValues, ...(CustomVideoElement.observedAttributes ?? [])];
   }
 
   #core?: PlaybackCore;
   #loadRequested?: Promise<void> | null;
-  #playerInitTime: number;
+  #defaultPlayerInitTime: number;
   #metadata: Readonly<Metadata> = {};
+  #tokens: Tokens = {};
   #_hlsConfig?: Partial<HlsConfig>;
   #playerSoftwareVersion?: string;
   #playerSoftwareName?: string;
@@ -95,7 +112,7 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
 
   constructor() {
     super();
-    this.#playerInitTime = generatePlayerInitTime();
+    this.#defaultPlayerInitTime = generatePlayerInitTime();
   }
 
   get preferCmcd() {
@@ -114,7 +131,19 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
   }
 
   get playerInitTime() {
-    return this.#playerInitTime;
+    if (!this.hasAttribute(Attributes.PLAYER_INIT_TIME)) return this.#defaultPlayerInitTime;
+    return +(this.getAttribute(Attributes.PLAYER_INIT_TIME) as string) as number;
+  }
+
+  set playerInitTime(val) {
+    // don't cause an infinite loop and avoid change event dispatching
+    if (val == this.playerInitTime) return;
+
+    if (val == null) {
+      this.removeAttribute(Attributes.PLAYER_INIT_TIME);
+    } else {
+      this.setAttribute(Attributes.PLAYER_INIT_TIME, `${+val}`);
+    }
   }
 
   get playerSoftwareName() {
@@ -293,6 +322,7 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
     }
   }
 
+  // NOTE: playbackId may contain additional query params (e.g. token= for playback token) (CJP)
   get playbackId(): string | undefined {
     if (this.hasAttribute(Attributes.PLAYBACK_ID)) {
       return this.getAttribute(Attributes.PLAYBACK_ID) as string;
@@ -384,6 +414,36 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
     }
   }
 
+  get assetStartTime() {
+    const val = this.getAttribute(Attributes.ASSET_START_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set assetStartTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.ASSET_START_TIME);
+    } else {
+      this.setAttribute(Attributes.ASSET_START_TIME, `${val}`);
+    }
+  }
+
+  get assetEndTime() {
+    const val = this.getAttribute(Attributes.ASSET_END_TIME);
+    if (val == null) return undefined;
+    const num = +val;
+    return !Number.isNaN(num) ? num : undefined;
+  }
+
+  set assetEndTime(val: number | undefined) {
+    if (val == undefined) {
+      this.removeAttribute(Attributes.ASSET_END_TIME);
+    } else {
+      this.setAttribute(Attributes.ASSET_END_TIME, `${val}`);
+    }
+  }
+
   get customDomain() {
     return this.getAttribute(Attributes.CUSTOM_DOMAIN) ?? undefined;
   }
@@ -412,6 +472,50 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
     } else {
       this.removeAttribute(Attributes.DRM_TOKEN);
     }
+  }
+
+  /**
+   * Get the playback token for signing the src URL.
+   */
+  get playbackToken() {
+    if (this.hasAttribute(Attributes.PLAYBACK_TOKEN)) {
+      return this.getAttribute(Attributes.PLAYBACK_TOKEN) ?? undefined;
+    }
+    if (this.hasAttribute(Attributes.PLAYBACK_ID)) {
+      const [, queryParts] = toPlaybackIdParts(this.playbackId ?? '');
+      return new URLSearchParams(queryParts).get('token') ?? undefined;
+    }
+    if (this.src) {
+      return new URLSearchParams(this.src).get('token') ?? undefined;
+    }
+    return undefined;
+  }
+
+  /**
+   * Set the playback token for signing the src URL.
+   */
+  set playbackToken(val: string | undefined) {
+    if (val === this.playbackToken) return;
+
+    if (val) {
+      this.setAttribute(Attributes.PLAYBACK_TOKEN, val);
+    } else {
+      this.removeAttribute(Attributes.PLAYBACK_TOKEN);
+    }
+  }
+
+  get tokens() {
+    const playback = this.getAttribute(Attributes.PLAYBACK_TOKEN);
+    const drm = this.getAttribute(Attributes.DRM_TOKEN);
+    return {
+      ...this.#tokens,
+      ...(playback != null ? { playback } : {}),
+      ...(drm != null ? { drm } : {}),
+    };
+  }
+
+  set tokens(val) {
+    this.#tokens = val ?? {};
   }
 
   get ended() {
@@ -502,7 +606,7 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
 
   set liveEdgeOffset(val: number | undefined) {
     // don't cause an infinite loop and avoid change event dispatching
-    if (val == this.targetLiveWindow) return;
+    if (val == this.liveEdgeOffset) return;
 
     if (val == null) {
       this.removeAttribute(Attributes.LIVE_EDGE_OFFSET);
@@ -515,7 +619,7 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
     return getSeekable(this.nativeEl);
   }
 
-  async addCuePoints<T = any>(cuePoints: { time: number; value: T }[]) {
+  async addCuePoints<T = any>(cuePoints: CuePoint<T>[]) {
     return addCuePoints(this.nativeEl, cuePoints);
   }
 
@@ -527,7 +631,7 @@ class MuxVideoBaseElement extends CustomVideoElement implements Partial<MuxMedia
     return getCuePoints(this.nativeEl);
   }
 
-  async addChapters(chapters: { startTime: number; endTime: number; value: string }[]) {
+  async addChapters(chapters: Chapter[]) {
     return addChapters(this.nativeEl, chapters);
   }
 
@@ -764,6 +868,13 @@ if (!globalThis.customElements.get('mux-video')) {
   globalThis.MuxVideoElement = MuxVideoElement;
 }
 
-export { PlaybackEngine, PlaybackEngine as Hls, ExtensionMimeTypeMap as MimeTypes, MediaError, VideoEvents };
+export {
+  PlaybackEngine,
+  PlaybackEngine as Hls,
+  ExtensionMimeTypeMap as MimeTypes,
+  MediaError,
+  VideoEvents,
+  generatePlayerInitTime,
+};
 
 export default MuxVideoElement;

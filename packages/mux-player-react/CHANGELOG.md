@@ -3,6 +3,132 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.1.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.0.0...@mux/mux-player-react@3.1.0) (2024-10-24)
+
+
+### Features
+
+* **playback-core, mux-video, mux-audio, mux-video-react, mux-audio-react, mux-player, mux-player-react:** Add asset start and end time props and attrs. ([#1002](https://github.com/muxinc/elements/issues/1002)) ([99a0726](https://github.com/muxinc/elements/commit/99a07268cfa78ee026a0ee7b7f9af90fcf3feb4c))
+
+
+
+
+
+# [3.0.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.9.1...@mux/mux-player-react@3.0.0) (2024-09-20)
+
+
+* chore(mux-player, mux-player-react)!: breaking change take 2 (#994) ([668403a](https://github.com/muxinc/elements/commit/668403adf97aae14e3acba667e42965f03d9ec97)), closes [#994](https://github.com/muxinc/elements/issues/994)
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video:** cast custom data ([2722b6e](https://github.com/muxinc/elements/commit/2722b6ea6c5497c0bd0a28fd1732bd0b9c2474b6))
+
+
+### BREAKING CHANGES
+
+* Retrospective breaking change for tooltips pr
+
+
+
+
+
+## [3.3.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.3.0...@mux/mux-player-react@3.3.1) (2025-03-21)
+
+
+### Bug Fixes
+
+* upgrade dependencies (castable-video, ...) ([#1087](https://github.com/muxinc/elements/issues/1087)) ([dc84f07](https://github.com/muxinc/elements/commit/dc84f07109565dc7ee29d691a0fc941c6854f762))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.3.0 to 3.3.1
+    * @mux/playback-core bumped from 0.28.3 to 0.28.4
+
+## [3.3.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.2.4...@mux/mux-player-react@3.3.0) (2025-02-13)
+
+
+### Features
+
+* implement Mux badge ([#988](https://github.com/muxinc/elements/issues/988)) ([2343df8](https://github.com/muxinc/elements/commit/2343df80fddcbf05485ed9d4ab27f1bb0fac04d0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.2.4 to 3.3.0
+    * @mux/playback-core bumped from 0.28.2 to 0.28.3
+
+## [3.2.4](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.2.3...@mux/mux-player-react@3.2.4) (2024-12-20)
+
+
+### Bug Fixes
+
+* upgrade deps custom-media-element, hls.js, mux-embed, ... ([#1052](https://github.com/muxinc/elements/issues/1052)) ([dd4264d](https://github.com/muxinc/elements/commit/dd4264d51671989a29c037e912a128056acea5f8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.2.3 to 3.2.4
+    * @mux/playback-core bumped from 0.28.1 to 0.28.2
+
+## [3.2.3](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.2.2...@mux/mux-player-react@3.2.3) (2024-12-19)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.2.2 to 3.2.3
+
+## [3.2.2](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.2.1...@mux/mux-player-react@3.2.2) (2024-12-19)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.2.1 to 3.2.2
+
+## [3.2.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.2.0...@mux/mux-player-react@3.2.1) (2024-12-17)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.2.0 to 3.2.1
+    * @mux/playback-core bumped from 0.28.0 to 0.28.1
+
+## [3.2.0](https://github.com/muxinc/elements/compare/@mux/mux-player-react@3.1.0...@mux/mux-player-react@3.2.0) (2024-12-12)
+
+
+### Features
+
+* Set default player init time for all elements for greater accuracy. Expose attr+prop for externally defined player init time. ([#1034](https://github.com/muxinc/elements/issues/1034)) ([61f10d3](https://github.com/muxinc/elements/commit/61f10d3933e487e44795a8e42e36721ae00873d2))
+* use MC media-error-dialog ([#1014](https://github.com/muxinc/elements/issues/1014)) ([2fbb2c1](https://github.com/muxinc/elements/commit/2fbb2c157aa694ed82fc2b81b989cca6c0f790af))
+
+
+### Bug Fixes
+
+* move package exports default condition to be last ([#1013](https://github.com/muxinc/elements/issues/1013)) ([192aa79](https://github.com/muxinc/elements/commit/192aa79903d3c01fc9ce9fda3d8a35be3c56fc83))
+* **mux-video, mux-video-react, mux-audio, mux-audio-react, mux-player, mux-player-react:** Expose element name and version via exports and statics for web components. ([#1017](https://github.com/muxinc/elements/issues/1017)) ([27b6858](https://github.com/muxinc/elements/commit/27b6858de2190e2caf2b1315ebbc469c01bbd25f))
+* React 19 bool prop to attr value bug ([#1026](https://github.com/muxinc/elements/issues/1026)) ([52bca58](https://github.com/muxinc/elements/commit/52bca588a223600f450ed1f26be45a0da34fd4b2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @mux/mux-player bumped from 3.1.0 to 3.2.0
+    * @mux/playback-core bumped from 0.27.0 to 0.28.0
+
 ## [2.9.1](https://github.com/muxinc/elements/compare/@mux/mux-player-react@2.9.0...@mux/mux-player-react@2.9.1) (2024-08-06)
 
 **Note:** Version bump only for package @mux/mux-player-react

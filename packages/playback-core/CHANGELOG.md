@@ -3,6 +3,86 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.27.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.26.0...@mux/playback-core@0.27.0) (2024-10-24)
+
+
+### Bug Fixes
+
+* chapters disappearing after preload none ([#998](https://github.com/muxinc/elements/issues/998)) ([0f9d0fb](https://github.com/muxinc/elements/commit/0f9d0fb732a592115bfb162e56b27246000252b5))
+* **playback-core:** Explicitly moving minimum version of mux-embed to 5.3.1 due to build issues in more complex build setups. ([#996](https://github.com/muxinc/elements/issues/996)) ([2577b78](https://github.com/muxinc/elements/commit/2577b78bd05bac544b62f07dae2e6d980ef24c23)), closes [#908](https://github.com/muxinc/elements/issues/908)
+* **playback-core:** Handle cases where subs or cc media playlist is default (based on hls.js assumptions). ([#997](https://github.com/muxinc/elements/issues/997)) ([1088443](https://github.com/muxinc/elements/commit/10884436604bfe323552d85319c848d037859178))
+* **playback-core:** Make sure seekable TimeRanges is populated when updating state. ([#1004](https://github.com/muxinc/elements/issues/1004)) ([b53b1ba](https://github.com/muxinc/elements/commit/b53b1ba19112817b295abc8f90918345bc2da0b2))
+
+
+### Features
+
+* **playback-core, mux-video, mux-audio, mux-video-react, mux-audio-react, mux-player, mux-player-react:** Add asset start and end time props and attrs. ([#1002](https://github.com/muxinc/elements/issues/1002)) ([99a0726](https://github.com/muxinc/elements/commit/99a07268cfa78ee026a0ee7b7f9af90fcf3feb4c))
+* **playback-core:** error handling rearchitecture (including more granular and DRM error cases)  ([4d0b670](https://github.com/muxinc/elements/commit/4d0b670eacb57f44891fab781941dab6e97e06fe))
+
+
+
+
+
+# [0.26.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.25.2...@mux/playback-core@0.26.0) (2024-09-20)
+
+
+### Bug Fixes
+
+* **playback-core:** upgrade mux-embed ([#989](https://github.com/muxinc/elements/issues/989)) ([5190c23](https://github.com/muxinc/elements/commit/5190c235e1e39cfd6a555855b2f57abd76631146))
+* **playback-core:** Use userAgentData API to improve android-like platform detection for preferPlayback MSE cases. ([#979](https://github.com/muxinc/elements/issues/979)) ([f6f99b3](https://github.com/muxinc/elements/commit/f6f99b3536ca266ea83f944498366a13059afa7b))
+
+
+### Features
+
+* **mux-player, mux-player-react, mux-video:** cast custom data ([2722b6e](https://github.com/muxinc/elements/commit/2722b6ea6c5497c0bd0a28fd1732bd0b9c2474b6))
+
+
+
+
+
+## [0.28.4](https://github.com/muxinc/elements/compare/@mux/playback-core@0.28.3...@mux/playback-core@0.28.4) (2025-03-21)
+
+
+### Bug Fixes
+
+* upgrade dependencies (castable-video, ...) ([#1087](https://github.com/muxinc/elements/issues/1087)) ([dc84f07](https://github.com/muxinc/elements/commit/dc84f07109565dc7ee29d691a0fc941c6854f762))
+
+## [0.28.3](https://github.com/muxinc/elements/compare/@mux/playback-core@0.28.2...@mux/playback-core@0.28.3) (2025-02-13)
+
+
+### Bug Fixes
+
+* **playback-core:** Update hls.js version to fix multi-DRM playready bug. ([#1060](https://github.com/muxinc/elements/issues/1060)) ([380ded2](https://github.com/muxinc/elements/commit/380ded2ce544b9c9ae6a1d108b9d48cd4feb58fd))
+* upgrade MC, fix theme flicker ([#1067](https://github.com/muxinc/elements/issues/1067)) ([b2fad06](https://github.com/muxinc/elements/commit/b2fad068300420d12ad25f26f24f8189f7ba6907))
+
+## [0.28.2](https://github.com/muxinc/elements/compare/@mux/playback-core@0.28.1...@mux/playback-core@0.28.2) (2024-12-20)
+
+
+### Bug Fixes
+
+* upgrade deps custom-media-element, hls.js, mux-embed, ... ([#1052](https://github.com/muxinc/elements/issues/1052)) ([dd4264d](https://github.com/muxinc/elements/commit/dd4264d51671989a29c037e912a128056acea5f8))
+
+## [0.28.1](https://github.com/muxinc/elements/compare/@mux/playback-core@0.28.0...@mux/playback-core@0.28.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* cap level controller import in cjs build ([#1045](https://github.com/muxinc/elements/issues/1045)) ([23045a3](https://github.com/muxinc/elements/commit/23045a3c28cf158bf3018312240b0e1925a1459b))
+
+## [0.28.0](https://github.com/muxinc/elements/compare/@mux/playback-core@0.27.0...@mux/playback-core@0.28.0) (2024-12-12)
+
+
+### Features
+
+* **playback-core:** custom cap level controller ([#1010](https://github.com/muxinc/elements/issues/1010)) ([e49e231](https://github.com/muxinc/elements/commit/e49e2318fba432da4832c10328e1f2034fba6949))
+* Set default player init time for all elements for greater accuracy. Expose attr+prop for externally defined player init time. ([#1034](https://github.com/muxinc/elements/issues/1034)) ([61f10d3](https://github.com/muxinc/elements/commit/61f10d3933e487e44795a8e42e36721ae00873d2))
+* use MC media-error-dialog ([#1014](https://github.com/muxinc/elements/issues/1014)) ([2fbb2c1](https://github.com/muxinc/elements/commit/2fbb2c157aa694ed82fc2b81b989cca6c0f790af))
+
+
+### Bug Fixes
+
+* move package exports default condition to be last ([#1013](https://github.com/muxinc/elements/issues/1013)) ([192aa79](https://github.com/muxinc/elements/commit/192aa79903d3c01fc9ce9fda3d8a35be3c56fc83))
+
 ## [0.25.2](https://github.com/muxinc/elements/compare/@mux/playback-core@0.25.1...@mux/playback-core@0.25.2) (2024-08-06)
 
 

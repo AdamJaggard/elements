@@ -1,4 +1,4 @@
-/* eslint @typescript-eslint/no-empty-function: "off", @typescript-eslint/no-unused-vars: "off" */
+/* eslint @typescript-eslint/no-empty-function: "off" */
 
 class EventTarget {
   addEventListener() {}
@@ -23,6 +23,9 @@ const customElements: CustomElementRegistry = {
     return undefined;
   },
   define(_name, _constructor, _options) {},
+  getName(_constructor) {
+    return null;
+  },
   upgrade(_root) {},
   whenDefined(_name) {
     return Promise.resolve(HTMLElement as unknown as CustomElementConstructor);
@@ -34,7 +37,7 @@ class CustomEvent {
   get detail() {
     return this.#detail;
   }
-  constructor(typeArg: string, eventInitDict: CustomEventInit = {}) {
+  constructor(_typeArg: string, eventInitDict: CustomEventInit = {}) {
     // super(typeArg, eventInitDict);
     this.#detail = eventInitDict?.detail;
   }
